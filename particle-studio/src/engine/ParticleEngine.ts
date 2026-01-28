@@ -339,11 +339,11 @@ export class ParticleEngine {
       const glyphPalette = l.glyphPalette || [];
       const layerShape = l.shape ?? "dot";
       
-      // Only use glyph palette if it has multiple shapes OR if the single shape differs from layer shape
-      // This allows the layer shape parameter to override the default type-based shape
+      // Always use layer shape parameter for single-entry palettes to avoid sync issues
+      // Only use glyph palette system when there are multiple shapes
       let effectiveGlyphCount = glyphPalette.length;
-      if (effectiveGlyphCount === 1 && glyphPalette[0] && glyphPalette[0].shape === layerShape) {
-        // Single entry matching layer shape - use layer shape parameter instead
+      if (effectiveGlyphCount <= 1) {
+        // Use layer shape parameter for 0 or 1 entry palettes
         effectiveGlyphCount = 0;
       }
       
