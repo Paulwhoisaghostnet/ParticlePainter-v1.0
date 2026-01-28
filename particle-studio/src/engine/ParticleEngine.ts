@@ -99,6 +99,9 @@ export class ParticleEngine {
 
   private t0 = performance.now();
   private time = 0;
+  
+  // TEMPORARY: For throttling shape debug logs
+  private _lastShapeLogTime: number = 0;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -330,7 +333,7 @@ export class ParticleEngine {
       gl.uniform1f(u_pointSize, effectivePointSize);
       gl.uniform1f(u_pointSizeMin, l.pointSizeMin ?? 0);
       gl.uniform1f(u_pointSizeMax, l.pointSizeMax ?? 0);
-      gl.uniform1f(u_sizeJitter, l.sizeJitter ?? 0.1);
+      gl.uniform1f(u_sizeJitter, l.sizeJitter ?? 0);
       
       // Glyph jitter uniforms
       gl.uniform1f(u_glyphRotationJitter, l.glyphRotationJitter ?? 0);
@@ -339,41 +342,26 @@ export class ParticleEngine {
       const glyphPalette = l.glyphPalette || [];
       const layerShape = l.shape ?? "dot";
       
-      // Always use layer shape parameter for single-entry palettes to avoid sync issues
-      // Only use glyph palette system when there are multiple shapes
-      let effectiveGlyphCount = glyphPalette.length;
-      if (effectiveGlyphCount <= 1) {
-        // Use layer shape parameter for 0 or 1 entry palettes
-        effectiveGlyphCount = 0;
+      // TEMPORARY LOGGING: Track shape rendering (throttled to once per second)
+      const now = Date.now();
+      if (now - this._lastShapeLogTime > 1000) {
+        this._lastShapeLogTime = now;
+        console.log("=== PARTICLE ENGINE RENDER SHAPE ===");
+        console.log("Layer:", l.name, "| ID:", l.id);
+        console.log("layer.shape:", l.shape);
+        console.log("layerShape (with fallback):", layerShape);
+        console.log("glyphPalette:", JSON.stringify(glyphPalette));
       }
+      
+      // SIMPLIFIED: Always use layer.shape directly - glyph palette is disabled
+      // Set effectiveGlyphCount to 0 so the shader uses u_shape instead of v_glyphShape
+      const effectiveGlyphCount = 0;
       
       gl.uniform1i(u_glyphCount, effectiveGlyphCount);
       
-      if (effectiveGlyphCount > 0) {
-        // Pack shape indices into vec4
-        const shapes = new Float32Array(4);
-        const weights = new Float32Array(4);
-        let totalWeight = 0;
-        
-        for (let i = 0; i < Math.min(4, effectiveGlyphCount); i++) {
-          shapes[i] = shapeToInt(glyphPalette[i].shape);
-          weights[i] = glyphPalette[i].weight;
-          totalWeight += weights[i];
-        }
-        
-        // Normalize weights
-        if (totalWeight > 0) {
-          for (let i = 0; i < 4; i++) {
-            weights[i] /= totalWeight;
-          }
-        }
-        
-        gl.uniform4fv(u_glyphPalette, shapes);
-        gl.uniform4fv(u_glyphWeights, weights);
-      } else {
-        gl.uniform4fv(u_glyphPalette, new Float32Array([0, 0, 0, 0]));
-        gl.uniform4fv(u_glyphWeights, new Float32Array([1, 0, 0, 0]));
-      }
+      // Clear glyph palette uniforms since we're not using them
+      gl.uniform4fv(u_glyphPalette, new Float32Array([0, 0, 0, 0]));
+      gl.uniform4fv(u_glyphWeights, new Float32Array([1, 0, 0, 0]));
       
       gl.uniform1f(u_brightness, l.brightness * effectiveColorIntensity);
       gl.uniform1f(u_dither, l.dither);
@@ -414,6 +402,15 @@ export class ParticleEngine {
       
       // Shape: dot=0, star=1, dash=2, tilde=3, square=4, diamond=5, ring=6, cross=7
       const shapeInt = shapeToInt(l.shape ?? "dot");
+      
+      // TEMPORARY LOGGING: Track shape uniform being set
+      if (now - this._lastShapeLogTime < 100) {
+        console.log("shapeInt (sent to shader):", shapeInt);
+        console.log("Shape mapping: dot=0, star=1, dash=2, tilde=3, square=4, diamond=5, ring=6, cross=7");
+        console.log("effectiveGlyphCount:", effectiveGlyphCount);
+        console.log("=== END PARTICLE ENGINE RENDER SHAPE ===");
+      }
+      
       gl.uniform1i(u_shape, shapeInt);
       
       // Type: sand=0, dust=1, sparks=2, ink=3
