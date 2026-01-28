@@ -7,7 +7,7 @@ import { RightPanel } from "./components/RightPanel";
 import { ExportBar } from "./components/ExportBar";
 import { ParticleEngine } from "./engine/ParticleEngine";
 import { getAudioEngine } from "./components/AudioControls";
-import { exportMP4, downloadBlob, abortCurrentExport, getExportLogs } from "./engine/VideoExporter";
+import { exportMP4, downloadBlob, getExportLogs } from "./engine/VideoExporter";
 
 const LOCKED_SIZE = 2048;
 

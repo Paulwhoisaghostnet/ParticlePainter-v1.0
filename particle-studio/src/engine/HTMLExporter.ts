@@ -58,14 +58,19 @@ export function exportSceneAsHTML(): void {
  */
 function generateStandaloneHTML(sceneData: SceneExportData): string {
   // Escape the JSON data for embedding in HTML
-  const sceneDataJson = JSON.stringify(sceneData, null, 2);
+  // Replace </script> to prevent script tag injection
+  const sceneDataJson = JSON.stringify(sceneData, null, 2)
+    .replace(/<\/script>/gi, "<\\/script>");
+  
+  // Use the timestamp from sceneData for consistency
+  const exportDate = new Date(sceneData.exportedAt).toLocaleDateString();
   
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Particle Scene - Exported ${new Date().toLocaleDateString()}</title>
+  <title>Particle Scene - Exported ${exportDate}</title>
   <style>
     * {
       margin: 0;
@@ -543,7 +548,7 @@ class StandaloneParticleEngine {
 
 // Utility: Convert hex color to RGB
 function hexToRGB(hex) {
-  const result = /^#?([a-f\\d]{2})([a-f\\d]{2})([a-f\\d]{2})$/i.exec(hex);
+  const result = /^#?([a-f\\\\d]{2})([a-f\\\\d]{2})([a-f\\\\d]{2})$/i.exec(hex);
   return result ? {
     r: parseInt(result[1], 16) / 255,
     g: parseInt(result[2], 16) / 255,
