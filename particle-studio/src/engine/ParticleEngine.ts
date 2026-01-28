@@ -337,16 +337,25 @@ export class ParticleEngine {
       gl.uniform1f(u_glyphScaleJitter, l.glyphScaleJitter ?? 0);
       
       const glyphPalette = l.glyphPalette || [];
-      const glyphCount = glyphPalette.length;
-      gl.uniform1i(u_glyphCount, glyphCount);
+      const layerShape = l.shape ?? "dot";
       
-      if (glyphCount > 0) {
+      // Only use glyph palette if it has multiple shapes OR if the single shape differs from layer shape
+      // This allows the layer shape parameter to override the default type-based shape
+      let effectiveGlyphCount = glyphPalette.length;
+      if (effectiveGlyphCount === 1 && glyphPalette[0] && glyphPalette[0].shape === layerShape) {
+        // Single entry matching layer shape - use layer shape parameter instead
+        effectiveGlyphCount = 0;
+      }
+      
+      gl.uniform1i(u_glyphCount, effectiveGlyphCount);
+      
+      if (effectiveGlyphCount > 0) {
         // Pack shape indices into vec4
         const shapes = new Float32Array(4);
         const weights = new Float32Array(4);
         let totalWeight = 0;
         
-        for (let i = 0; i < Math.min(4, glyphCount); i++) {
+        for (let i = 0; i < Math.min(4, effectiveGlyphCount); i++) {
           shapes[i] = shapeToInt(glyphPalette[i].shape);
           weights[i] = glyphPalette[i].weight;
           totalWeight += weights[i];
