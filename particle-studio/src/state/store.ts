@@ -237,6 +237,7 @@ type StudioState = {
   setGlobal: (patch: Partial<GlobalConfig>) => void;
 
   addLayer: (kind?: LayerKind, particleType?: ParticleType) => void;
+  importLayer: (settings: Omit<LayerConfig, "id">) => void;
   removeLayer: (id: string) => void;
   selectLayer: (id: string) => void;
   setLayer: (id: string, patch: Partial<LayerConfig>) => void;
@@ -301,6 +302,17 @@ export const useStudioStore = create<StudioState>((set, get) => ({
     const label = kindLabels[kind];
     const next = defaultLayer(`${label} ${get().layers.length + 1}`, particleType, 5000, kind);
     set((s) => ({ layers: [next, ...s.layers], selectedLayerId: next.id }));
+  },
+
+  importLayer: (settings: Omit<LayerConfig, "id">) => {
+    // Generate new ID and create the layer with imported settings
+    const newLayer: LayerConfig = {
+      id: uid(),
+      ...settings,
+      // Append "(imported)" to name to indicate it was imported
+      name: `${settings.name} (imported)`,
+    };
+    set((s) => ({ layers: [newLayer, ...s.layers], selectedLayerId: newLayer.id }));
   },
 
   removeLayer: (id) => {

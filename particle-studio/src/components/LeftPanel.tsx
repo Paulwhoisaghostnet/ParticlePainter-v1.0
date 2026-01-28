@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useStudioStore } from "../state/store";
 import type { LayerConfig, ParticleType } from "../state/types";
 import { SliderRow } from "./ui/SliderRow";
@@ -8,6 +8,7 @@ import { AddLayerModal } from "./AddLayerModal";
 import { MaskEditor } from "./MaskEditor";
 import { MaskEraser } from "./MaskEraser";
 import { FlowPathEditor } from "./FlowPathEditor";
+import { exportLayerSettings, importLayerSettings } from "../engine/LayerExporter";
 
 const typeOptions: { value: ParticleType; label: string; desc: string }[] = [
   { value: "sand", label: "Sand", desc: "Heavy, resists wind, clings to surfaces" },
@@ -28,13 +29,33 @@ export function LeftPanel() {
   const global = useStudioStore((s) => s.global);
   const setGlobal = useStudioStore((s) => s.setGlobal);
   const requestResetAll = useStudioStore((s) => s.requestResetAll);
+  const importLayer = useStudioStore((s) => s.importLayer);
 
   const [addModalOpen, setAddModalOpen] = useState(false);
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   const layer = useMemo(
     () => layers.find((l) => l.id === selectedLayerId),
     [layers, selectedLayerId]
   );
+
+  // Handle layer settings import
+  const handleImportLayerSettings = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    try {
+      const settings = await importLayerSettings(file);
+      importLayer(settings);
+    } catch (err) {
+      alert(`Failed to import layer settings: ${err instanceof Error ? err.message : String(err)}`);
+    }
+    
+    // Reset the input so the same file can be imported again
+    if (importInputRef.current) {
+      importInputRef.current.value = "";
+    }
+  };
 
   return (
     <div className="panel leftPanel">
@@ -76,6 +97,33 @@ export function LeftPanel() {
             {/* Layer info */}
             <div className="section">
               <h3 className="sectionTitle">Layer Settings</h3>
+
+              {/* Layer import/export buttons */}
+              <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                <button
+                  className="btn btnSm"
+                  style={{ flex: 1 }}
+                  onClick={() => exportLayerSettings(layer)}
+                  title="Export layer settings as JSON"
+                >
+                  📤 Export Settings
+                </button>
+                <button
+                  className="btn btnSm"
+                  style={{ flex: 1 }}
+                  onClick={() => importInputRef.current?.click()}
+                  title="Import layer settings from JSON"
+                >
+                  📥 Import Settings
+                </button>
+                <input
+                  ref={importInputRef}
+                  type="file"
+                  accept=".json"
+                  style={{ display: "none" }}
+                  onChange={handleImportLayerSettings}
+                />
+              </div>
 
               <div className="row">
                 <span className="rowLabel">Name</span>
