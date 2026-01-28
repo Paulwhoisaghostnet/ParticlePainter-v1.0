@@ -33,6 +33,32 @@ const colorSchemes: { value: ColorScheme; label: string; colors: string[] }[] = 
   { value: "mono", label: "Mono", colors: ["#ffffff", "#888888", "#333333"] }
 ];
 
+// Collapsible section component for saving UI space
+function CollapsibleSection({ 
+  title, 
+  defaultOpen = true, 
+  children 
+}: { 
+  title: string; 
+  defaultOpen?: boolean; 
+  children: React.ReactNode;
+}) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  return (
+    <div className="section">
+      <h3 
+        className="sectionTitle" 
+        style={{ cursor: "pointer", userSelect: "none", display: "flex", justifyContent: "space-between" }}
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        {title}
+        <span style={{ fontSize: "0.8em", opacity: 0.7 }}>{isOpen ? "▼" : "▶"}</span>
+      </h3>
+      {isOpen && children}
+    </div>
+  );
+}
+
 export function RightPanel() {
   const layers = useStudioStore((s) => s.layers);
   const selectedLayerId = useStudioStore((s) => s.selectedLayerId);
@@ -139,9 +165,7 @@ export function RightPanel() {
             <div className="hr" />
 
             {/* Particle appearance */}
-            <div className="section">
-              <h3 className="sectionTitle">Particle</h3>
-
+            <CollapsibleSection title="Particle" defaultOpen={true}>
               <div className="row">
                 <span className="rowLabel">Shape</span>
                 <select
@@ -150,17 +174,36 @@ export function RightPanel() {
                   value={layer.shape ?? "dot"}
                   onChange={(e) => {
                     const newShape = e.target.value as ParticleShape;
-                    // Only update glyphPalette if it's a single-entry palette (default case)
-                    // This preserves multi-shape palettes while fixing the default behavior
-                    if (!layer.glyphPalette || layer.glyphPalette.length <= 1) {
-                      setLayer(layer.id, { 
-                        shape: newShape,
-                        glyphPalette: [{ shape: newShape, weight: 1.0 }]
-                      });
-                    } else {
-                      // Multi-shape palette exists, only update the shape parameter
-                      setLayer(layer.id, { shape: newShape });
-                    }
+                    
+                    // TEMPORARY LOGGING: Track shape change flow
+                    console.log("=== PARTICLE SHAPE CHANGE START ===");
+                    console.log("Previous shape:", layer.shape);
+                    console.log("New shape selected:", newShape);
+                    console.log("Layer ID:", layer.id);
+                    console.log("Layer name:", layer.name);
+                    console.log("Layer type (particle type):", layer.type);
+                    
+                    // Simple shape update - shape parameter directly controls rendering
+                    // glyphPalette is always synced to match the shape parameter
+                    const update = { 
+                      shape: newShape,
+                      glyphPalette: [{ shape: newShape, weight: 1.0 }]
+                    };
+                    
+                    console.log("Update payload:", JSON.stringify(update, null, 2));
+                    console.log("Calling setLayer with update...");
+                    
+                    setLayer(layer.id, update);
+                    
+                    // Verify the update after a tick
+                    setTimeout(() => {
+                      const currentLayers = useStudioStore.getState().layers;
+                      const updatedLayer = currentLayers.find(l => l.id === layer.id);
+                      console.log("=== POST-UPDATE VERIFICATION ===");
+                      console.log("Updated layer shape:", updatedLayer?.shape);
+                      console.log("Updated glyphPalette:", JSON.stringify(updatedLayer?.glyphPalette));
+                      console.log("=== PARTICLE SHAPE CHANGE END ===");
+                    }, 0);
                   }}
                 >
                   {shapeOptions.map((o) => (
@@ -175,8 +218,8 @@ export function RightPanel() {
                 label="Point size"
                 value={layer.pointSize}
                 min={0.5}
-                max={16}
-                step={0.1}
+                max={32}
+                step={0.5}
                 onChange={(v) => setLayer(layer.id, { pointSize: v })}
               />
               <SliderRow
@@ -197,7 +240,7 @@ export function RightPanel() {
               />
               <SliderRow
                 label="Size jitter"
-                value={layer.sizeJitter ?? 0.1}
+                value={layer.sizeJitter ?? 0}
                 min={0}
                 max={1}
                 step={0.01}
@@ -227,14 +270,28 @@ export function RightPanel() {
                 step={0.01}
                 onChange={(v) => setLayer(layer.id, { dither: v })}
               />
-            </div>
+              <SliderRow
+                label="Rotation jitter"
+                value={layer.glyphRotationJitter ?? 0}
+                min={0}
+                max={180}
+                step={1}
+                onChange={(v) => setLayer(layer.id, { glyphRotationJitter: v })}
+              />
+              <SliderRow
+                label="Scale jitter"
+                value={layer.glyphScaleJitter ?? 0}
+                min={0}
+                max={1}
+                step={0.01}
+                onChange={(v) => setLayer(layer.id, { glyphScaleJitter: v })}
+              />
+            </CollapsibleSection>
 
             <div className="hr" />
 
             {/* Color section */}
-            <div className="section">
-              <h3 className="sectionTitle">Color</h3>
-
+            <CollapsibleSection title="Color" defaultOpen={false}>
               <div className="row">
                 <span className="rowLabel">Mode</span>
                 <div className="segmented" style={{ width: 200 }}>
@@ -362,14 +419,12 @@ export function RightPanel() {
                   </div>
                 </>
               )}
-            </div>
+            </CollapsibleSection>
 
             <div className="hr" />
 
             {/* ============ MATERIAL SYSTEM ============ */}
-            <div className="section">
-              <h3 className="sectionTitle">Material System</h3>
-              
+            <CollapsibleSection title="Material System" defaultOpen={false}>
               {/* Depth Field */}
               <SwitchRow
                 label="Depth Field (2.5D)"
@@ -409,13 +464,12 @@ export function RightPanel() {
                   />
                 </>
               )}
-            </div>
+            </CollapsibleSection>
 
             <div className="hr" />
 
             {/* Ground Plane */}
-            <div className="section">
-              <h3 className="sectionTitle">Ground Plane</h3>
+            <CollapsibleSection title="Ground Plane" defaultOpen={false}>
               <SwitchRow
                 label="Enable ground plane"
                 checked={layer.groundPlaneEnabled}
@@ -441,13 +495,12 @@ export function RightPanel() {
                   />
                 </>
               )}
-            </div>
+            </CollapsibleSection>
 
             <div className="hr" />
 
             {/* Surface Fields */}
-            <div className="section">
-              <h3 className="sectionTitle">Surface Fields</h3>
+            <CollapsibleSection title="Surface Fields" defaultOpen={false}>
               <SwitchRow
                 label="Enable surface fields"
                 checked={layer.surfaceFieldsEnabled}
@@ -512,13 +565,12 @@ export function RightPanel() {
                   )}
                 </>
               )}
-            </div>
+            </CollapsibleSection>
 
             <div className="hr" />
 
             {/* Material Mode */}
-            <div className="section">
-              <h3 className="sectionTitle">Material Mode</h3>
+            <CollapsibleSection title="Material Mode" defaultOpen={false}>
               <div className="row">
                 <span className="rowLabel">Mode</span>
                 <div className="segmented" style={{ width: 200 }}>
@@ -542,33 +594,7 @@ export function RightPanel() {
                 {layer.materialMode === "palette" && "Color regions map to material presets"}
                 {layer.materialMode === "rgbParams" && "RGB channels control stick/ripple/pass-through"}
               </div>
-            </div>
-
-            <div className="hr" />
-
-            {/* Glyph/Shape Jitter */}
-            <div className="section">
-              <h3 className="sectionTitle">Glyph Jitter</h3>
-              <SliderRow
-                label="Rotation jitter"
-                value={layer.glyphRotationJitter}
-                min={0}
-                max={180}
-                step={1}
-                onChange={(v) => setLayer(layer.id, { glyphRotationJitter: v })}
-              />
-              <SliderRow
-                label="Scale jitter"
-                value={layer.glyphScaleJitter}
-                min={0}
-                max={1}
-                step={0.01}
-                onChange={(v) => setLayer(layer.id, { glyphScaleJitter: v })}
-              />
-              <div className="small" style={{ marginTop: 8 }}>
-                Multi-shape palette: edit in layer config (glyphPalette)
-              </div>
-            </div>
+            </CollapsibleSection>
 
             <div className="hr" />
 

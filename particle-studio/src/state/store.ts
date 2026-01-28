@@ -47,31 +47,12 @@ const defaultMaterialPresets: MaterialPreset[] = [
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
-// Default shape based on particle type for distinct visual identity
-const defaultShapeForType = (type: ParticleType): ParticleShape => {
-  switch (type) {
-    case "sand": return "dot";      // granular, round
-    case "dust": return "ring";     // soft, hollow
-    case "sparks": return "star";   // sparkly, pointed
-    case "ink": return "dash";      // streaky, elongated
-    case "crumbs": return "square"; // chunky bits
-    case "liquid": return "dot";    // droplets
-    default: return "dot";
-  }
-};
+// Default shape is always "dot" - user can change via Shape parameter in RightPanel
+// Shape selection is decoupled from particle type selection
+const DEFAULT_SHAPE: ParticleShape = "dot";
 
-// Default point size based on type
-const defaultSizeForType = (type: ParticleType): number => {
-  switch (type) {
-    case "sand": return 2.0;   // chunky grains
-    case "dust": return 1.0;   // tiny motes
-    case "sparks": return 2.5; // bright flares
-    case "ink": return 1.8;    // medium streaks
-    case "crumbs": return 2.2; // irregular chunks
-    case "liquid": return 2.8; // water droplets
-    default: return 1.5;
-  }
-};
+// Default point size is 10 for all particle types (easy to see individual particles)
+const DEFAULT_POINT_SIZE = 10;
 
 // Default mask transform
 const defaultMaskTransform = (): MaskTransform => ({
@@ -138,7 +119,7 @@ const defaultLayer = (name: string, type: ParticleType, particleCount: number, k
   spawnRate: type === "sand" ? 0.15 : 0.0,
   spawnSpeed: type === "sand" ? 0.4 : type === "sparks" ? 1.5 : type === "ink" ? 0.6 : 0.8,
   type,
-  shape: defaultShapeForType(type),
+  shape: DEFAULT_SHAPE, // Always "dot" by default - user changes via UI
   
   // === SPAWN REGION SYSTEM ===
   spawnConfig: defaultSpawnConfig(type),
@@ -181,13 +162,13 @@ const defaultLayer = (name: string, type: ParticleType, particleCount: number, k
   boundaryBounce: type === "sand" ? 0.2 : type === "sparks" ? 0.6 : 0.4,
   
   // render
-  pointSize: defaultSizeForType(type),
+  pointSize: DEFAULT_POINT_SIZE, // 10 by default for visibility
   pointSizeMin: 0, // offset from base size (0 to -3)
   pointSizeMax: 0, // offset from base size (0 to +3)
-  sizeJitter: type === "crumbs" ? 0.5 : type === "liquid" ? 0.3 : 0.1, // size variation
+  sizeJitter: 0, // 0 by default per user request
   brightness: type === "sparks" ? 1.4 : 1.0,
-  dither: type === "dust" ? 0.4 : 0.2,
-  trailLength: type === "ink" ? 0.4 : type === "sparks" ? 0.25 : 0.0,
+  dither: 0, // 0 by default per user request
+  trailLength: 0, // 0 by default per user request
   
   // color options
   colorMode: "single",
@@ -205,7 +186,7 @@ const defaultLayer = (name: string, type: ParticleType, particleCount: number, k
 
   // === MATERIAL SYSTEM ===
   
-  // Depth field (2.5D)
+  // Depth field (2.5D) - disabled by default
   depthEnabled: false,
   depthFromMask: true,
   depthBlur: 3,
@@ -213,29 +194,29 @@ const defaultLayer = (name: string, type: ParticleType, particleCount: number, k
   depthInvert: false,
   depthScale: 0.5,
 
-  // Ground plane
+  // Ground plane - disabled by default
   groundPlaneEnabled: false,
   groundPlaneTilt: 30,
   groundPlaneY: 0.8,
 
-  // Surface field buffers
-  surfaceFieldsEnabled: type === "liquid" || type === "ink",
-  smearFieldEnabled: type === "ink" || type === "liquid",
-  smearDecayRate: type === "ink" ? 0.1 : 0.3,
-  rippleFieldEnabled: type === "liquid",
+  // Surface field buffers - disabled by default per user request
+  surfaceFieldsEnabled: false,
+  smearFieldEnabled: false,
+  smearDecayRate: 0.3,
+  rippleFieldEnabled: false,
   rippleDamping: 0.05,
   rippleSpeed: 1.0,
-  dentFieldEnabled: type === "sand",
+  dentFieldEnabled: false,
   dentRecoveryRate: 0.02,
 
   // Material mode
   materialMode: "binary",
   materialPalette: [...defaultMaterialPresets],
 
-  // Glyph/shape jitter
-  glyphPalette: [{ shape: defaultShapeForType(type), weight: 1.0 }] as GlyphPaletteEntry[],
-  glyphRotationJitter: type === "sparks" ? 45 : type === "dust" ? 15 : 0,
-  glyphScaleJitter: type === "crumbs" ? 0.4 : type === "liquid" ? 0.2 : 0.1
+  // Glyph/shape jitter - all 0 by default per user request
+  glyphPalette: [{ shape: DEFAULT_SHAPE, weight: 1.0 }] as GlyphPaletteEntry[],
+  glyphRotationJitter: 0,
+  glyphScaleJitter: 0
 });
 
 type StudioState = {
