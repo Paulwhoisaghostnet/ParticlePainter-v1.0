@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { useStudioStore } from "../state/store";
 import { getAudioEngine } from "./AudioControls";
 import type { GifDuration, WebmDuration, Mp4Duration } from "../state/types";
+import { exportSceneAsHTML } from "../engine/HTMLExporter";
 
 type ExportStatus = {
   active: boolean;
@@ -197,6 +198,24 @@ export function ExportBar() {
             </button>
           </div>
         )}
+      </div>
+
+      {/* HTML Export */}
+      <div className="exportGroup">
+        <button
+          className="btn btnSm"
+          onClick={() => {
+            try {
+              exportSceneAsHTML();
+            } catch (err) {
+              alert(`Failed to export HTML: ${err instanceof Error ? err.message : String(err)}`);
+            }
+          }}
+          disabled={isExporting}
+          title="Export scene as self-contained HTML"
+        >
+          🌐 HTML
+        </button>
       </div>
 
       {/* FPS Selection */}

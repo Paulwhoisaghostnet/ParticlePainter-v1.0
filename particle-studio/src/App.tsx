@@ -7,7 +7,7 @@ import { RightPanel } from "./components/RightPanel";
 import { ExportBar } from "./components/ExportBar";
 import { ParticleEngine } from "./engine/ParticleEngine";
 import { getAudioEngine } from "./components/AudioControls";
-import { exportMP4, downloadBlob } from "./engine/VideoExporter";
+import { exportMP4, downloadBlob, abortCurrentExport, getExportLogs } from "./engine/VideoExporter";
 
 const LOCKED_SIZE = 2048;
 
@@ -374,16 +374,30 @@ export default function App() {
     }
 
     setIsMp4Exporting(true);
+    console.log("=== Starting MP4 Export ===");
+    console.log(`Duration: ${durationMs}ms, FPS: ${fps}, Has Audio: ${!!audioUrl}`);
 
     exportMP4(canvas, audioUrl ?? null, durationMs, fps, (progress) => {
       console.log(`MP4 Export: ${progress.message} (${Math.round(progress.progress * 100)}%)`);
     })
       .then((blob) => {
+        console.log("=== MP4 Export Successful ===");
+        console.log(`Output size: ${blob.size} bytes`);
         downloadBlob(blob, `particle-studio-${Date.now()}-${fps}fps.mp4`);
         setIsMp4Exporting(false);
       })
       .catch((err) => {
-        console.error("MP4 export failed:", err);
+        console.error("=== MP4 Export Failed ===");
+        console.error("Error:", err);
+        
+        // Get and display export logs for debugging
+        const logs = getExportLogs();
+        console.error("Export logs:", logs);
+        
+        // Show user-friendly error message
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        alert(`MP4 Export Failed!\n\n${errorMessage}\n\nCheck browser console for detailed export logs.`);
+        
         setIsMp4Exporting(false);
       });
   }, [exportMp4Nonce, setIsMp4Exporting]);
