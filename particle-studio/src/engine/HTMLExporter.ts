@@ -229,6 +229,7 @@ class StandaloneParticleEngine {
     // Enhanced vertex shader with velocity-based sizing and all parameters
     const vsSource = \`#version 300 es
       precision highp float;
+      precision highp int;
       
       in vec2 aPosition;
       in vec2 aVelocity;
@@ -286,6 +287,7 @@ class StandaloneParticleEngine {
     // Enhanced fragment shader with shapes, colors, and type-specific effects
     const fsSource = \`#version 300 es
       precision highp float;
+      precision highp int;
       
       in float vSeed;
       in vec2 vVelocity;
