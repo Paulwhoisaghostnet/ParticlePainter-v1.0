@@ -53,6 +53,14 @@ export function ExportBar() {
   
   // Get audio duration once for the MP4 section
   const audioDuration = global.audioUrl ? getAudioEngine().getDuration() : 0;
+  
+  // Sync loop duration with GIF duration when loop mode is enabled
+  // This ensures the loop perfectly matches the export duration
+  useEffect(() => {
+    if (global.loopMode && global.gifDuration > 0) {
+      setGlobal({ loopDuration: global.gifDuration });
+    }
+  }, [global.loopMode, global.gifDuration, setGlobal]);
 
   const gifDurations: GifDuration[] = [1, 3, 4.2, 5, 6.66];
   const webmDurations: WebmDuration[] = [0, 5, 15, 30, 60];
@@ -400,6 +408,24 @@ export function ExportBar() {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Loop mode toggle */}
+      <div className="exportGroup">
+        <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }} title="When enabled, particle animation loops seamlessly based on export duration">
+          <input
+            type="checkbox"
+            checked={global.loopMode}
+            onChange={(e) => setGlobal({ loopMode: e.target.checked })}
+            disabled={isRecording}
+          />
+          <span className="small">Loop</span>
+        </label>
+        {global.loopMode && (
+          <span style={{ fontSize: 10, opacity: 0.7, marginLeft: 4 }}>
+            {global.loopDuration}s
+          </span>
+        )}
       </div>
 
       {/* Reset on start toggle */}

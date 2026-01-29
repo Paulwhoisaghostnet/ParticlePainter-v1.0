@@ -243,7 +243,14 @@ export class ParticleEngine {
     const dt = Math.min(0.033, (now - this.t0) / 1000);
     this.t0 = now;
 
-    if (!g.paused) this.time += dt * g.timeScale;
+    if (!g.paused) {
+      this.time += dt * g.timeScale;
+      
+      // Loop mode: wrap time to create seamless loops
+      if (g.loopMode && g.loopDuration > 0) {
+        this.time = this.time % g.loopDuration;
+      }
+    }
 
     const gl = this.gl;
 

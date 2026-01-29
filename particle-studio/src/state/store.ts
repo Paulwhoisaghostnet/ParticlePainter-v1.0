@@ -273,6 +273,9 @@ export const useStudioStore = create<StudioState>((set, get) => ({
     webmDuration: 0,
     mp4Duration: 15,
     recordingResetOnStart: false,
+    // Loop mode defaults
+    loopMode: false,
+    loopDuration: 3, // defaults to GIF duration
     audioUrl: undefined,
     audioPlaying: false,
     audioVolume: 0.8,

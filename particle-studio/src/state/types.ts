@@ -329,6 +329,9 @@ export type GlobalConfig = {
   webmDuration: WebmDuration;
   mp4Duration: Mp4Duration;
   recordingResetOnStart: boolean;
+  // Loop mode - when enabled, particle simulation time wraps to create seamless loops
+  loopMode: boolean;
+  loopDuration: number; // seconds - duration of the loop (matches selected export duration)
   // Audio settings
   audioUrl?: string;
   audioPlaying: boolean;
