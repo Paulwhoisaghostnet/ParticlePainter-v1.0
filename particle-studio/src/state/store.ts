@@ -275,7 +275,12 @@ export const useStudioStore = create<StudioState>((set, get) => ({
     recordingResetOnStart: false,
     audioUrl: undefined,
     audioPlaying: false,
-    audioVolume: 0.8
+    audioVolume: 0.8,
+    // Rolling buffer defaults (disabled by default to save resources)
+    bufferEnabled: false,
+    bufferDuration: 5,
+    bufferFps: 24,
+    bufferQuality: "low"
   },
   layers: [],
   selectedLayerId: "",

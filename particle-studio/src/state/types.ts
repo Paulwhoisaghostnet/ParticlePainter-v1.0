@@ -311,6 +311,7 @@ export type ExportFormat = "gif" | "webm" | "mp4" | "png";
 export type GifDuration = 1 | 3 | 4.2 | 5 | 6.66;
 export type WebmDuration = 0 | 5 | 15 | 30 | 60; // 0 = open/manual stop
 export type Mp4Duration = 15 | 30 | 60 | -1; // -1 = audio track length
+export type BufferQuality = "low" | "medium" | "high";
 
 export type GlobalConfig = {
   paused: boolean;
@@ -332,4 +333,9 @@ export type GlobalConfig = {
   audioUrl?: string;
   audioPlaying: boolean;
   audioVolume: number; // 0-1
+  // Rolling buffer settings for quick export
+  bufferEnabled: boolean;
+  bufferDuration: number; // seconds (2-10)
+  bufferFps: number; // frames per second (15-30)
+  bufferQuality: BufferQuality;
 };

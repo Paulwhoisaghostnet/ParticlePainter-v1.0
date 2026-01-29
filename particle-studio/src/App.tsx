@@ -8,6 +8,7 @@ import { ExportBar } from "./components/ExportBar";
 import { ParticleEngine } from "./engine/ParticleEngine";
 import { getAudioEngine } from "./components/AudioControls";
 import { exportMP4, downloadBlob, getExportLogs } from "./engine/VideoExporter";
+import { getFrameBuffer } from "./engine/FrameBuffer";
 
 const LOCKED_SIZE = 2048;
 
@@ -64,6 +65,17 @@ export default function App() {
     };
   }, []);
 
+  // Update frame buffer config when settings change
+  useEffect(() => {
+    const frameBuffer = getFrameBuffer();
+    frameBuffer.updateConfig({
+      enabled: global.bufferEnabled,
+      durationSeconds: global.bufferDuration,
+      fps: global.bufferFps,
+      quality: global.bufferQuality,
+    });
+  }, [global.bufferEnabled, global.bufferDuration, global.bufferFps, global.bufferQuality]);
+
   useEffect(() => {
     const engine = engineRef.current;
     if (!engine) return;
@@ -83,6 +95,14 @@ export default function App() {
       }
       
       engine.step();
+      
+      // Capture frame to rolling buffer if enabled (after render completes)
+      const canvas = canvasRef.current;
+      if (canvas && global.bufferEnabled && !global.paused) {
+        const frameBuffer = getFrameBuffer();
+        frameBuffer.captureFrame(canvas);
+      }
+      
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
