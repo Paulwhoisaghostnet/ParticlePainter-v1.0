@@ -1,5 +1,22 @@
 import { Muxer, ArrayBufferTarget } from "mp4-muxer";
 
+// Type declarations for experimental WebCodecs APIs
+declare global {
+  interface MediaStreamTrackProcessor {
+    readonly readable: ReadableStream<VideoFrame>;
+  }
+  
+  interface MediaStreamTrackProcessorInit {
+    track: MediaStreamTrack;
+    maxBufferSize?: number;
+  }
+  
+  var MediaStreamTrackProcessor: {
+    prototype: MediaStreamTrackProcessor;
+    new(init: MediaStreamTrackProcessorInit): MediaStreamTrackProcessor;
+  };
+}
+
 // Logging utilities shared with VideoExporter
 export type ExportLogEntry = {
   timestamp: number;
@@ -164,7 +181,6 @@ export async function exportMP4WithWebCodecs(
   
   // Configure audio encoder if audio is present
   let audioEncoder: AudioEncoder | null = null;
-  let audioData: AudioData[] = [];
   
   if (audioDestination) {
     audioEncoder = new AudioEncoder({
@@ -190,29 +206,66 @@ export async function exportMP4WithWebCodecs(
   
   onProgress?.({ stage: "recording", progress: 0.1, message: "Recording frames..." });
   
-  // Capture frames from canvas
-  const frameDurationUs = (1_000_000 / fps);
-  let frameCount = 0;
-  const totalFrames = Math.floor((durationMs / 1000) * fps);
+  // Use canvas.captureStream() to get frames as they're rendered
+  const stream = canvas.captureStream(fps);
+  const videoTrack = stream.getVideoTracks()[0];
   
-  logExport("CAPTURE", "Starting frame capture", { totalFrames, frameDurationUs });
+  if (!videoTrack) {
+    throw new Error("Failed to get video track from canvas");
+  }
+  
+  logExport("CAPTURE", "Starting frame capture via MediaStreamTrack");
   
   return new Promise<Blob>((resolve, reject) => {
     const startTime = Date.now();
     let lastProgressUpdate = Date.now();
+    let frameCount = 0;
     
-    // Capture audio if present
-    if (audioDestination && audioEncoder) {
-      // For this implementation, we'll use MediaRecorder to capture audio
-      // and then encode it with AudioEncoder. This is a simplified approach.
-      logExport("AUDIO", "Note: Audio capture via WebCodecs requires more complex setup");
-      logExport("AUDIO", "For full audio support, consider using MediaStreamTrackProcessor");
-    }
-    
-    const captureFrame = async () => {
-      try {
-        if (frameCount >= totalFrames) {
-          // Done capturing frames
+    // Use MediaStreamTrackProcessor to get VideoFrames from the stream
+    // This is the modern WebCodecs-compatible way to process video frames
+    if (typeof MediaStreamTrackProcessor !== "undefined") {
+      logExport("CAPTURE", "Using MediaStreamTrackProcessor");
+      
+      const processor = new MediaStreamTrackProcessor({ track: videoTrack });
+      const reader = processor.readable.getReader();
+      
+      const processFrames = async () => {
+        try {
+          while (true) {
+            const elapsed = Date.now() - startTime;
+            if (elapsed >= durationMs) {
+              logExport("CAPTURE", "Duration reached, stopping capture", { frameCount });
+              break;
+            }
+            
+            const { done, value: frame } = await reader.read();
+            if (done) break;
+            
+            // Encode frame
+            const keyFrame = frameCount % 30 === 0; // Keyframe every 30 frames (1 second at 30fps)
+            videoEncoder.encode(frame, { keyFrame });
+            frame.close();
+            
+            frameCount++;
+            
+            // Update progress
+            const now = Date.now();
+            if (now - lastProgressUpdate > 200) {
+              const progress = elapsed / durationMs;
+              onProgress?.({
+                stage: "recording",
+                progress: 0.1 + (progress * 0.6), // 10% to 70%
+                message: `Recording... ${Math.floor(elapsed / 1000)}s / ${Math.floor(durationMs / 1000)}s`,
+              });
+              lastProgressUpdate = now;
+            }
+          }
+          
+          // Clean up
+          reader.releaseLock();
+          videoTrack.stop();
+          
+          // Finalize encoding
           logExport("CAPTURE", "Frame capture complete", { frameCount });
           onProgress?.({ stage: "processing", progress: 0.7, message: "Finalizing video..." });
           
@@ -247,45 +300,103 @@ export async function exportMP4WithWebCodecs(
           if (audioEncoder) audioEncoder.close();
           
           resolve(blob);
-          return;
+        } catch (err) {
+          logExport("ERROR", "Frame processing failed", { error: String(err), frameCount });
+          videoTrack.stop();
+          reject(err);
         }
-        
-        // Create VideoFrame from canvas
-        const bitmap = await createImageBitmap(canvas);
-        const frame = new VideoFrame(bitmap, {
-          timestamp: frameCount * frameDurationUs,
-        });
-        
-        // Encode frame
-        const keyFrame = frameCount % 30 === 0; // Keyframe every 30 frames
-        videoEncoder.encode(frame, { keyFrame });
-        frame.close();
-        bitmap.close();
-        
-        frameCount++;
-        
-        // Update progress
-        const now = Date.now();
-        if (now - lastProgressUpdate > 200) {
-          const progress = frameCount / totalFrames;
-          onProgress?.({
-            stage: "recording",
-            progress: 0.1 + (progress * 0.6), // 10% to 70%
-            message: `Recording... ${frameCount}/${totalFrames} frames`,
+      };
+      
+      processFrames();
+    } else {
+      // Fallback: capture frames manually using createImageBitmap
+      logExport("CAPTURE", "MediaStreamTrackProcessor not available, using manual capture");
+      
+      const frameDurationUs = (1_000_000 / fps);
+      const totalFrames = Math.floor((durationMs / 1000) * fps);
+      
+      const captureFrame = async () => {
+        try {
+          const elapsed = Date.now() - startTime;
+          
+          if (elapsed >= durationMs || frameCount >= totalFrames) {
+            // Done capturing frames
+            videoTrack.stop();
+            logExport("CAPTURE", "Frame capture complete", { frameCount });
+            onProgress?.({ stage: "processing", progress: 0.7, message: "Finalizing video..." });
+            
+            // Flush encoders
+            await videoEncoder.flush();
+            logExport("VIDEO_ENCODER", "Video encoder flushed");
+            
+            if (audioEncoder) {
+              await audioEncoder.flush();
+              logExport("AUDIO_ENCODER", "Audio encoder flushed");
+            }
+            
+            // Finalize muxer
+            muxer.finalize();
+            logExport("MUXER", "Muxer finalized");
+            
+            // Get the MP4 blob
+            const buffer = target.buffer;
+            const blob = new Blob([buffer], { type: "video/mp4" });
+            
+            const totalTime = Date.now() - exportStartTime;
+            logExport("COMPLETE", "WebCodecs MP4 export completed", {
+              totalTimeMs: totalTime,
+              blobSize: blob.size,
+              frameCount,
+            });
+            
+            onProgress?.({ stage: "done", progress: 1, message: "Complete!" });
+            
+            // Cleanup
+            videoEncoder.close();
+            if (audioEncoder) audioEncoder.close();
+            
+            resolve(blob);
+            return;
+          }
+          
+          // Create VideoFrame from canvas
+          const bitmap = await createImageBitmap(canvas);
+          const frame = new VideoFrame(bitmap, {
+            timestamp: frameCount * frameDurationUs,
           });
-          lastProgressUpdate = now;
+          
+          // Encode frame
+          const keyFrame = frameCount % 30 === 0; // Keyframe every 30 frames
+          videoEncoder.encode(frame, { keyFrame });
+          frame.close();
+          bitmap.close();
+          
+          frameCount++;
+          
+          // Update progress
+          const now = Date.now();
+          if (now - lastProgressUpdate > 200) {
+            const progress = elapsed / durationMs;
+            onProgress?.({
+              stage: "recording",
+              progress: 0.1 + (progress * 0.6), // 10% to 70%
+              message: `Recording... ${Math.floor(elapsed / 1000)}s / ${Math.floor(durationMs / 1000)}s`,
+            });
+            lastProgressUpdate = now;
+          }
+          
+          // Schedule next frame based on FPS
+          // Use a small timeout to avoid blocking the browser
+          setTimeout(captureFrame, 1000 / fps);
+        } catch (err) {
+          logExport("ERROR", "Frame capture failed", { error: String(err), frameCount });
+          videoTrack.stop();
+          reject(err);
         }
-        
-        // Schedule next frame
-        // Use a small timeout to avoid blocking the browser
-        setTimeout(captureFrame, 0);
-      } catch (err) {
-        logExport("ERROR", "Frame capture failed", { error: String(err), frameCount });
-        reject(err);
-      }
-    };
-    
-    // Start capturing frames
-    captureFrame();
+      };
+      
+      // Start capturing frames
+      captureFrame();
+    }
   });
 }
