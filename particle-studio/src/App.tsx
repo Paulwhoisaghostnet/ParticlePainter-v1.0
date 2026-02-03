@@ -271,9 +271,10 @@ export default function App() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const { recordingFps, gifDuration } = useStudioStore.getState().global;
+    const { recordingFps, gifDuration, recordingResetOnStart } = useStudioStore.getState().global;
     const fps = recordingFps ?? 30;
     const duration = gifDuration ?? 3;
+    const resetOnStart = Boolean(recordingResetOnStart);
     // Use precise frame duration without rounding to maintain accurate timing
     const frameDurationMs = 1000 / fps;
     const totalFrames = Math.max(1, Math.round(fps * duration));
@@ -310,6 +311,11 @@ export default function App() {
 
     (async () => {
       try {
+        // Reset particles to time=0 if requested for proper loop export
+        if (resetOnStart) {
+          engineRef.current?.resetAll();
+        }
+        
         let nextTime = performance.now();
         for (let i = 0; i < totalFrames; i += 1) {
           await waitForNextFrameTime(nextTime);

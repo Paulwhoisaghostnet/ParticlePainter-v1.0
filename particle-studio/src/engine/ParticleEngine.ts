@@ -225,6 +225,10 @@ export class ParticleEngine {
     gl.clear(gl.COLOR_BUFFER_BIT);
     this.acc.flip = false;
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    
+    // Reset time to 0 for loop mode to work correctly
+    this.time = 0;
+    this.t0 = performance.now();
   }
 
   screenshot(): string | null {
