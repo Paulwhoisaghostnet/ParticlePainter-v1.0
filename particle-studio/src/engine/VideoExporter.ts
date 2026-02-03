@@ -1,5 +1,10 @@
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile, toBlobURL } from "@ffmpeg/util";
+import {
+  canUseOptimizedPipeline,
+  exportMP4WithWebCodecs,
+  getExportLogs as getWebCodecsLogs,
+} from "./WebCodecsExporter";
 
 let ffmpeg: FFmpeg | null = null;
 let ffmpegLoading = false;
@@ -291,6 +296,43 @@ export async function exportMP4(
     calculatedTimeout: ffmpegTimeout
   });
   
+  // Check if we can use the optimized WebCodecs pipeline
+  // Note: For now, we only use WebCodecs for video-only exports
+  // Audio support via WebCodecs requires MediaStream integration
+  const hasAudio = !!audioUrl;
+  const canUseWebCodecs = !hasAudio && await canUseOptimizedPipeline(hasAudio);
+  
+  if (canUseWebCodecs) {
+    logExport("PIPELINE", "Using optimized WebCodecs pipeline (video-only)");
+    onProgress?.({ stage: "recording", progress: 0, message: "Using optimized pipeline..." });
+    
+    try {
+      const blob = await exportMP4WithWebCodecs(canvas, null, durationMs, fps, onProgress);
+      const totalTime = Date.now() - exportStartTime;
+      logExport("COMPLETE", "WebCodecs export successful", { totalTimeMs: totalTime });
+      return blob;
+    } catch (err) {
+      // If WebCodecs fails, fall back to FFmpeg
+      logExport("FALLBACK", "WebCodecs export failed, falling back to FFmpeg", { 
+        error: String(err) 
+      });
+      console.warn("WebCodecs export failed, falling back to FFmpeg:", err);
+      
+      // Merge WebCodecs logs into main logs
+      const webCodecsLogs = getWebCodecsLogs();
+      exportLogs.push(...webCodecsLogs);
+      
+      // Continue with FFmpeg pipeline below
+    }
+  } else {
+    if (hasAudio) {
+      logExport("PIPELINE", "Using stable FFmpeg pipeline (audio present)");
+    } else {
+      logExport("PIPELINE", "Using stable FFmpeg pipeline (WebCodecs not supported)");
+    }
+  }
+  
+  // FFmpeg pipeline (stable fallback)
   onProgress?.({ stage: "recording", progress: 0, message: "Recording video..." });
   
   // First record to WebM (video only)
