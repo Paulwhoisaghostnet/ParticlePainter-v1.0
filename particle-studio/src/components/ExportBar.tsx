@@ -31,10 +31,19 @@ export function ExportBar() {
   const [expandedSection, setExpandedSection] = useState<"gif" | "webm" | "mp4" | "buffer" | null>(null);
   const [isQuickExporting, setIsQuickExporting] = useState(false);
   const [showMintModal, setShowMintModal] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [bufferStats, setBufferStats] = useState({ frameCount: 0, durationMs: 0, memoryEstimateMB: 0 });
   const gifWorkerUrl = useRef<string>(new URL("gif.js/dist/gif.worker.js", import.meta.url).toString());
 
   const isExporting = isRecording || isGifExporting || isMp4Exporting || isQuickExporting;
+  
+  // Clear error after 5 seconds
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
   
   // Update buffer stats periodically when buffer is enabled
   useEffect(() => {
@@ -161,6 +170,26 @@ export function ExportBar() {
         >
           ● {isGifExporting ? "GIF..." : isMp4Exporting ? "MP4..." : "REC"}
         </span>
+      )}
+
+      {/* Error message */}
+      {error && (
+        <div
+          style={{
+            position: "absolute",
+            top: -40,
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "rgba(255, 61, 90, 0.9)",
+            color: "#fff",
+            padding: "8px 16px",
+            borderRadius: 8,
+            fontSize: 12,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+          }}
+        >
+          {error}
+        </div>
       )}
 
       {/* Screenshot */}
@@ -329,7 +358,8 @@ export function ExportBar() {
             if (walletConnected) {
               setShowMintModal(true);
             } else {
-              alert("Please connect your wallet first to mint NFTs");
+              // Show inline error instead of alert
+              setError("Please connect your wallet first to mint NFTs");
             }
           }}
           disabled={isExporting}

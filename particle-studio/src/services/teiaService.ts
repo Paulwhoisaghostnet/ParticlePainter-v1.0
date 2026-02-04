@@ -1,7 +1,7 @@
 import { TezosToolkit } from "@taquito/taquito";
 
-// TEIA FA2 contract address on mainnet
-const TEIA_MINTER_CONTRACT = "KT1RJ6PbjHpwc3M5rw5s2Nbmefwbuwbdxton";
+// Note: TEIA contract integration would require specific contract ABI and entrypoints
+// For now, this service prepares files and opens Teia's web interface for minting
 
 export interface MintParams {
   editions: number;
@@ -18,33 +18,25 @@ export interface IPFSUploadResponse {
 
 class TeiaService {
   /**
-   * Upload file to IPFS via Teia's pinning service or Pinata
+   * Upload file to IPFS via public gateway
+   * Note: For production, use a proper IPFS pinning service like Pinata or NFT.Storage with API keys
    */
   async uploadToIPFS(file: Blob, fileName: string): Promise<IPFSUploadResponse> {
     try {
-      // Create FormData for file upload
-      const formData = new FormData();
-      formData.append("file", file, fileName);
-
-      // Use public IPFS gateway for upload
-      // Note: For production, you should use a proper IPFS pinning service like Pinata or NFT.Storage
-      const response = await fetch("https://ipfs.infura.io:5001/api/v0/add", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to upload to IPFS");
-      }
-
-      const data = await response.json();
-      const ipfsHash = data.Hash;
-      const ipfsUri = `ipfs://${ipfsHash}`;
-
-      return { ipfsHash, ipfsUri };
+      // For now, we'll use a public IPFS gateway
+      // In production, you should use NFT.Storage, Pinata, or another pinning service
+      // Example with NFT.Storage:
+      // const client = new NFTStorage({ token: API_KEY })
+      // const cid = await client.storeBlob(file)
+      
+      // Since public endpoints require auth, we'll throw an error guiding the user
+      throw new Error(
+        "IPFS upload requires configuration. Please set up an IPFS pinning service " +
+        "(NFT.Storage, Pinata, or Web3.Storage) with proper API keys."
+      );
     } catch (error) {
       console.error("IPFS upload failed:", error);
-      throw new Error("Failed to upload file to IPFS");
+      throw error;
     }
   }
 

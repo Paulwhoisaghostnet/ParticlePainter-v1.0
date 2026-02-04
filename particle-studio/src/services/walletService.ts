@@ -74,7 +74,7 @@ class WalletService {
         this.wallet = null;
         this.tezos = null;
         this.userAddress = null;
-        this.initialized = false;
+        // Don't reset initialized flag - allow reconnection without reinitializing
       }
     } catch (error) {
       console.error("Failed to disconnect wallet:", error);
