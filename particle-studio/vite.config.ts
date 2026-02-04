@@ -18,9 +18,10 @@ export default defineConfig({
     port: 5173, 
     strictPort: true,
     headers: {
-      // Enable SharedArrayBuffer for FFmpeg WASM
+      // Enable SharedArrayBuffer for FFmpeg WASM while allowing Beacon SDK cross-origin requests
+      // Using "credentialless" instead of "require-corp" to avoid blocking wallet connect
       "Cross-Origin-Opener-Policy": "same-origin",
-      "Cross-Origin-Embedder-Policy": "require-corp"
+      "Cross-Origin-Embedder-Policy": "credentialless"
     }
   },
   // Optimize dependencies with WASM
