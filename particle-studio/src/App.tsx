@@ -18,6 +18,8 @@ export default function App() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
   const recordingTimeoutRef = useRef<number | null>(null);
+  const audioDestinationRef = useRef<MediaStreamAudioDestinationNode | null>(null);
+  const audioWasPlayingRef = useRef<boolean>(false);
   const gifWorkerUrl = useRef<string>(new URL("gif.js/dist/gif.worker.js", import.meta.url).toString());
 
   // Mark as initialized after first render cycle completes
@@ -165,15 +167,43 @@ export default function App() {
       const canvasStream = canvas.captureStream(fps);
       const tracks = [...canvasStream.getTracks()];
       
-      // Try to capture audio from Tone.js context
+      // Clear any previous audio destination
+      if (audioDestinationRef.current) {
+        try {
+          Tone.getDestination().disconnect(audioDestinationRef.current);
+          audioDestinationRef.current = null;
+        } catch (err) {
+          console.warn("Error disconnecting previous audio destination:", err);
+        }
+      }
+      
+      // Reset audio playback state tracking
+      audioWasPlayingRef.current = false;
+      
+      // Try to capture audio from Tone.js if audio is loaded
       try {
-        const audioCtx = Tone.context.rawContext;
-        if (audioCtx && audioCtx instanceof AudioContext) {
-          const dest = audioCtx.createMediaStreamDestination();
-          // Connect Tone.js destination to our capture destination
-          Tone.getDestination().connect(dest);
-          const audioTracks = dest.stream.getAudioTracks();
-          tracks.push(...audioTracks);
+        const audioEngine = getAudioEngine();
+        if (audioEngine.isLoaded()) {
+          const audioCtx = Tone.context.rawContext;
+          if (audioCtx && audioCtx instanceof AudioContext) {
+            const audioDestination = audioCtx.createMediaStreamDestination();
+            audioDestinationRef.current = audioDestination;
+            
+            // Connect the Tone.js master output to the recording destination
+            // This ensures audio is captured even if not currently playing
+            Tone.getDestination().connect(audioDestination);
+            
+            // If audio is not playing, start it for the recording
+            audioWasPlayingRef.current = audioEngine.isPlaying();
+            if (!audioWasPlayingRef.current) {
+              audioEngine.play();
+            }
+            
+            const audioTracks = audioDestination.stream.getAudioTracks();
+            if (audioTracks.length > 0) {
+              tracks.push(...audioTracks);
+            }
+          }
         }
       } catch (audioErr) {
         console.warn("Could not capture audio:", audioErr);
@@ -212,6 +242,23 @@ export default function App() {
       };
 
       mediaRecorder.onstop = () => {
+        // Clean up audio destination connection if it was created
+        if (audioDestinationRef.current) {
+          try {
+            Tone.getDestination().disconnect(audioDestinationRef.current);
+            
+            // Restore original audio playback state
+            const audioEngine = getAudioEngine();
+            if (!audioWasPlayingRef.current && audioEngine.isPlaying()) {
+              audioEngine.pause();
+            }
+            
+            audioDestinationRef.current = null;
+          } catch (err) {
+            console.warn("Error disconnecting audio destination:", err);
+          }
+        }
+        
         const blob = new Blob(recordedChunksRef.current, { type: "video/webm" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
