@@ -18,11 +18,16 @@ class WalletService {
     if (this.initialized) return;
     
     try {
-      // Initialize wallet lazily
+      // Initialize wallet lazily with explicit network configuration
+      // This is required by Beacon SDK v4.x for reliable connection
       this.wallet = new BeaconWallet({
         name: "Particle Painter",
         iconUrl: "https://tezostaquito.io/img/favicon.png",
         preferredNetwork: NETWORK_TYPE,
+        network: {
+          type: NETWORK_TYPE,
+          rpcUrl: RPC_URL,
+        },
       });
 
       // Subscribe to ACTIVE_ACCOUNT_SET event before requesting permissions
@@ -75,6 +80,7 @@ class WalletService {
       });
 
       // Request permissions - this will trigger ACTIVE_ACCOUNT_SET event
+      // Network is already configured in the BeaconWallet constructor
       await this.wallet.requestPermissions();
       
       // Wait for the active account from the subscription
