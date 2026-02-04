@@ -12,6 +12,7 @@ class WalletService {
   private userAddress: string | null = null;
   private initialized: boolean = false;
   private activeAccountResolver: ((account: AccountInfo) => void) | null = null;
+  private connectionTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   private async initialize() {
     if (this.initialized) return;
@@ -31,8 +32,12 @@ class WalletService {
         (account) => {
           if (account) {
             this.userAddress = account.address;
-            // Resolve any pending connection promise
+            // Resolve any pending connection promise and clear the timeout
             if (this.activeAccountResolver) {
+              if (this.connectionTimeoutId) {
+                clearTimeout(this.connectionTimeoutId);
+                this.connectionTimeoutId = null;
+              }
               this.activeAccountResolver(account);
               this.activeAccountResolver = null;
             }
@@ -60,9 +65,10 @@ class WalletService {
       const activeAccountPromise = new Promise<AccountInfo>((resolve, reject) => {
         this.activeAccountResolver = resolve;
         // Set a timeout in case the account is never set
-        setTimeout(() => {
+        this.connectionTimeoutId = setTimeout(() => {
           if (this.activeAccountResolver) {
             this.activeAccountResolver = null;
+            this.connectionTimeoutId = null;
             reject(new Error("Timeout waiting for active account"));
           }
         }, 60000); // 60 second timeout
