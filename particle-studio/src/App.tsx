@@ -167,7 +167,14 @@ export default function App() {
       const tracks = [...canvasStream.getTracks()];
       
       // Clear any previous audio destination
-      audioDestinationRef.current = null;
+      if (audioDestinationRef.current) {
+        try {
+          Tone.getDestination().disconnect(audioDestinationRef.current);
+          audioDestinationRef.current = null;
+        } catch (err) {
+          console.warn("Error disconnecting previous audio destination:", err);
+        }
+      }
       
       // Try to capture audio from Tone.js if audio is loaded
       try {
@@ -191,7 +198,6 @@ export default function App() {
             const audioTracks = audioDestination.stream.getAudioTracks();
             if (audioTracks.length > 0) {
               tracks.push(...audioTracks);
-              console.log("Audio tracks added to recording:", audioTracks.length);
             }
           }
         }

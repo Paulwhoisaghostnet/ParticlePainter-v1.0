@@ -147,7 +147,6 @@ export function ExportBar() {
               }
               
               audioStream = audioDestination.stream;
-              console.log("Audio stream connected for quick export");
             }
           }
         } catch (audioErr) {
@@ -163,6 +162,10 @@ export function ExportBar() {
       // Clean up audio destination
       if (audioDestination) {
         try {
+          // Disconnect the destination node from all its inputs
+          audioDestination.disconnect();
+          
+          // Also disconnect Tone.js from this destination
           const Tone = await import("tone");
           Tone.getDestination().disconnect(audioDestination);
         } catch (err) {
