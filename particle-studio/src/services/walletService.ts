@@ -1,6 +1,6 @@
 import { BeaconWallet } from "@taquito/beacon-wallet";
 import { TezosToolkit } from "@taquito/taquito";
-import { NetworkType, BeaconEvent, AccountInfo } from "@airgap/beacon-sdk";
+import { NetworkType, BeaconEvent, AccountInfo, SigningType } from "@airgap/beacon-sdk";
 
 // Use mainnet for production
 const RPC_URL = "https://mainnet.api.tez.ie";
@@ -124,6 +124,7 @@ class WalletService {
 
     try {
       const result = await this.wallet.client.requestSignPayload({
+        signingType: SigningType.RAW,
         payload: message,
       });
       return result.signature;
