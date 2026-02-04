@@ -234,6 +234,11 @@ type StudioState = {
   exportMp4Nonce: number;
   isMp4Exporting: boolean;
 
+  // Wallet state
+  walletConnected: boolean;
+  walletAddress: string | null;
+  walletBalance: number;
+
   setGlobal: (patch: Partial<GlobalConfig>) => void;
 
   addLayer: (kind?: LayerKind, particleType?: ParticleType) => void;
@@ -255,6 +260,10 @@ type StudioState = {
   setIsGifExporting: (v: boolean) => void;
   requestExportMp4: () => void;
   setIsMp4Exporting: (v: boolean) => void;
+
+  // Wallet actions
+  setWalletConnected: (connected: boolean, address: string | null, balance: number) => void;
+  disconnectWallet: () => void;
 };
 
 export const useStudioStore = create<StudioState>((set, get) => ({
@@ -297,6 +306,11 @@ export const useStudioStore = create<StudioState>((set, get) => ({
   isGifExporting: false,
   exportMp4Nonce: 0,
   isMp4Exporting: false,
+
+  // Wallet state
+  walletConnected: false,
+  walletAddress: null,
+  walletBalance: 0,
 
   setGlobal: (patch) => set((s) => ({ global: { ...s.global, ...patch } })),
 
@@ -381,7 +395,14 @@ export const useStudioStore = create<StudioState>((set, get) => ({
 
   requestExportMp4: () => set((s) => ({ exportMp4Nonce: s.exportMp4Nonce + 1 })),
 
-  setIsMp4Exporting: (v) => set({ isMp4Exporting: v })
+  setIsMp4Exporting: (v) => set({ isMp4Exporting: v }),
+
+  // Wallet actions
+  setWalletConnected: (connected, address, balance) =>
+    set({ walletConnected: connected, walletAddress: address, walletBalance: balance }),
+
+  disconnectWallet: () =>
+    set({ walletConnected: false, walletAddress: null, walletBalance: 0 })
 }));
 
 // initialize selected layer id on first import

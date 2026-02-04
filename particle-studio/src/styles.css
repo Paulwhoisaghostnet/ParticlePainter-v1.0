@@ -679,3 +679,38 @@ canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
     max-height: 40vh;
   }
 }
+
+/* ============================================
+   MODAL STYLES
+   ============================================ */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  background: linear-gradient(180deg, var(--panel), var(--panel2));
+  border: 1px solid var(--stroke2);
+  border-radius: var(--radius);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Wallet Connect styles */
+.walletConnect {
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.2);
+}

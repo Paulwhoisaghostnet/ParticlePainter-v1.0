@@ -5,6 +5,8 @@ import type { GifDuration, WebmDuration, Mp4Duration, BufferQuality } from "../s
 import { exportSceneAsHTML } from "../engine/HTMLExporter";
 import { getFrameBuffer } from "../engine/FrameBuffer";
 import { quickExportGif, quickExportWebM, downloadBlob } from "../engine/QuickExport";
+import { WalletConnect } from "./WalletConnect";
+import { MintModal } from "./MintModal";
 
 type ExportStatus = {
   active: boolean;
@@ -24,9 +26,11 @@ export function ExportBar() {
   const isRecording = useStudioStore((s) => s.isRecording);
   const isGifExporting = useStudioStore((s) => s.isGifExporting);
   const isMp4Exporting = useStudioStore((s) => s.isMp4Exporting);
+  const walletConnected = useStudioStore((s) => s.walletConnected);
 
   const [expandedSection, setExpandedSection] = useState<"gif" | "webm" | "mp4" | "buffer" | null>(null);
   const [isQuickExporting, setIsQuickExporting] = useState(false);
+  const [showMintModal, setShowMintModal] = useState(false);
   const [bufferStats, setBufferStats] = useState({ frameCount: 0, durationMs: 0, memoryEstimateMB: 0 });
   const gifWorkerUrl = useRef<string>(new URL("gif.js/dist/gif.worker.js", import.meta.url).toString());
 
@@ -322,13 +326,22 @@ export function ExportBar() {
         <button
           className="btn btnSm"
           onClick={() => {
-            window.open("https://teia.art/mint", "_blank", "noopener,noreferrer");
+            if (walletConnected) {
+              setShowMintModal(true);
+            } else {
+              alert("Please connect your wallet first to mint NFTs");
+            }
           }}
           disabled={isExporting}
-          title="Open TEIA to mint NFT on Tezos blockchain"
+          title={walletConnected ? "Mint NFT on Teia" : "Connect wallet to mint"}
         >
           🎨 TEIA
         </button>
+      </div>
+
+      {/* Wallet Connect */}
+      <div className="exportGroup">
+        <WalletConnect />
       </div>
 
       {/* Separator */}
@@ -481,6 +494,9 @@ export function ExportBar() {
           <span className="small">Reset</span>
         </label>
       </div>
+
+      {/* Mint Modal */}
+      {showMintModal && <MintModal onClose={() => setShowMintModal(false)} />}
     </div>
   );
 }
