@@ -18,22 +18,55 @@ export interface IPFSUploadResponse {
 
 class TeiaService {
   /**
-   * Upload file to IPFS via public gateway
-   * Note: For production, use a proper IPFS pinning service like Pinata or NFT.Storage with API keys
+   * Upload file to IPFS via Pinata
+   * Uses Pinata's pinning service with JWT authentication
    */
   async uploadToIPFS(file: Blob, fileName: string): Promise<IPFSUploadResponse> {
     try {
-      // For now, we'll use a public IPFS gateway
-      // In production, you should use NFT.Storage, Pinata, or another pinning service
-      // Example with NFT.Storage:
-      // const client = new NFTStorage({ token: API_KEY })
-      // const cid = await client.storeBlob(file)
+      // Get Pinata JWT from environment variables
+      const pinataJWT = import.meta.env.VITE_PINATA_JWT;
       
-      // Since public endpoints require auth, we'll throw an error guiding the user
-      throw new Error(
-        "IPFS upload requires configuration. Please set up an IPFS pinning service " +
-        "(NFT.Storage, Pinata, or Web3.Storage) with proper API keys."
-      );
+      if (!pinataJWT) {
+        throw new Error(
+          "Pinata API key not configured. Please add VITE_PINATA_JWT to your .env file. " +
+          "Get your API key from https://app.pinata.cloud/developers/api-keys"
+        );
+      }
+
+      // Create FormData for Pinata API
+      const formData = new FormData();
+      formData.append('file', file, fileName);
+
+      // Optional: Add metadata
+      const metadata = JSON.stringify({
+        name: fileName,
+      });
+      formData.append('pinataMetadata', metadata);
+
+      // Upload to Pinata
+      const response = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${pinataJWT}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Pinata upload failed: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      const ipfsHash = data.IpfsHash;
+      const ipfsUri = `ipfs://${ipfsHash}`;
+
+      console.log(`File uploaded to IPFS: ${ipfsUri}`);
+
+      return {
+        ipfsHash,
+        ipfsUri
+      };
     } catch (error) {
       console.error("IPFS upload failed:", error);
       throw error;
