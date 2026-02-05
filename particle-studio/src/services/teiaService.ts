@@ -6,6 +6,10 @@ const MINTER_CONTRACT = "KT1Hkg5qeNhfwpKW4fXvq7HGZB9z2EnmCCA9";
 // TzKT explorer URL for viewing transactions
 const TZKT_EXPLORER_URL = "https://tzkt.io";
 
+// Confirmation polling settings
+const MAX_CONFIRMATION_ATTEMPTS = 30; // ~5 minutes with 10s intervals
+const CONFIRMATION_POLL_INTERVAL_MS = 10000; // 10 seconds
+
 export interface MintParams {
   editions: number;
   description: string;
@@ -13,7 +17,6 @@ export interface MintParams {
   fileName: string;
   mimeType: string;
   royalties?: number; // Optional royalties in basis points (100 = 1%, max 2500 = 25%)
-  tags?: string[]; // Optional tags for categorization
 }
 
 export interface IPFSUploadResponse {
@@ -221,10 +224,9 @@ class TeiaService {
     
     try {
       // Create a polling mechanism to check transaction status
-      const maxAttempts = 30; // ~5 minutes with 10s intervals
       let confirmed = false;
       
-      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      for (let attempt = 0; attempt < MAX_CONFIRMATION_ATTEMPTS; attempt++) {
         try {
           // Check if the operation is confirmed via TzKT API
           const response = await fetch(`https://api.tzkt.io/v1/operations/${opHash}`);
@@ -245,9 +247,9 @@ class TeiaService {
           console.warn("Error checking transaction status:", fetchError);
         }
         
-        // Wait 10 seconds before next check
-        await new Promise(resolve => setTimeout(resolve, 10000));
-        onProgress?.(`Waiting for confirmation... (attempt ${attempt + 1}/${maxAttempts})`);
+        // Wait before next check
+        await new Promise(resolve => setTimeout(resolve, CONFIRMATION_POLL_INTERVAL_MS));
+        onProgress?.(`Waiting for confirmation... (attempt ${attempt + 1}/${MAX_CONFIRMATION_ATTEMPTS})`);
       }
       
       if (!confirmed) {

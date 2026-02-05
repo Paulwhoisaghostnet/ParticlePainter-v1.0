@@ -260,7 +260,7 @@ export function MintModal({ onClose }: MintModalProps) {
                   ✓ Mint Successful!
                 </div>
                 <div style={{ marginBottom: 8 }}>
-                  Operation Hash: <code style={{ fontSize: 10 }}>{success.opHash}</code>
+                  Operation Hash: <code style={{ fontSize: 11 }}>{success.opHash}</code>
                 </div>
                 <a
                   href={success.explorerUrl}
