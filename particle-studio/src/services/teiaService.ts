@@ -28,7 +28,7 @@ class TeiaService {
       
       if (!pinataJWT) {
         throw new Error(
-          "Pinata API key not configured. Please add VITE_PINATA_JWT to your .env file. " +
+          "Pinata API key not configured. Please add VITE_PINATA_JWT to your .env.local file. " +
           "Get your API key from https://app.pinata.cloud/developers/api-keys"
         );
       }
