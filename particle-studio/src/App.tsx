@@ -36,6 +36,7 @@ export default function App() {
   const global = useStudioStore((s) => s.global);
   const setIsRecording = useStudioStore((s) => s.setIsRecording);
   const setIsGifExporting = useStudioStore((s) => s.setIsGifExporting);
+  const setExportProgress = useStudioStore((s) => s.setExportProgress);
 
   const engineRef = useRef<ParticleEngine | null>(null);
 
@@ -422,7 +423,6 @@ export default function App() {
         requestAnimationFrame(tick);
       });
 
-    const setExportProgress = useStudioStore((s) => s.setExportProgress);
     let cancelled = false;
     setIsGifExporting(true);
     setExportProgress(0, "Initializing...");
@@ -490,7 +490,6 @@ export default function App() {
   const exportMp4Nonce = useStudioStore((s) => s.exportMp4Nonce);
 
   const setIsMp4Exporting = useStudioStore((s) => s.setIsMp4Exporting);
-  const setExportProgress = useStudioStore((s) => s.setExportProgress);
   const lastMp4NonceRef = useRef(0);
 
   useEffect(() => {
