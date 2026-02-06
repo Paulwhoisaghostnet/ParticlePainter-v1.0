@@ -1,4 +1,5 @@
 import { TezosToolkit } from "@taquito/taquito";
+import { stringToBytes } from "@taquito/utils";
 
 // HEN/Teia minter contract on Tezos mainnet
 const MINTER_CONTRACT = "KT1Hkg5qeNhfwpKW4fXvq7HGZB9z2EnmCCA9";
@@ -16,7 +17,7 @@ export interface MintParams {
   fileBlob: Blob;
   fileName: string;
   mimeType: string;
-  royalties?: number; // Optional royalties in basis points (100 = 1%, max 2500 = 25%)
+  royalties: number; // 0-250 scale matching HEN minter contract (100 = 10%, 250 = 25%)
 }
 
 export interface IPFSUploadResponse {
@@ -50,11 +51,14 @@ class TeiaService {
       const formData = new FormData();
       formData.append('file', file, fileName);
 
-      // Optional: Add metadata
+      // Add metadata and pin options
       const metadata = JSON.stringify({
         name: fileName,
       });
       formData.append('pinataMetadata', metadata);
+
+      // Force CIDv0 (Qm..., 46 chars) so that ipfs:// + CID = 53 bytes
+      formData.append('pinataOptions', JSON.stringify({ cidVersion: 0 }));
 
       // Upload to Pinata
       const response = await fetch('https://api.pinata.cloud/pinning/pinFileToIPFS', {
@@ -179,17 +183,19 @@ class TeiaService {
     try {
       // Get the minter contract
       const contract = await tezos.wallet.at(MINTER_CONTRACT);
-      
-      // Royalties default to 10% (1000 basis points)
-      const royalties = params.royalties ?? 1000;
-      
-      // Call the mint entrypoint with proper parameter structure
-      // HEN minter expects: (address creator, nat amount, nat royalties, string metadata, list<string> tags)
+
+      // Royalties on HEN minter: 0-250 scale (100 = 10%, 250 = 25%)
+      const royalties = params.royalties ?? 100;
+
+      // HEN minter requires metadata to be exactly 53 bytes (ipfs:// + 46-char CIDv0)
+      const metadataBytes = stringToBytes(metadataUri);
+
+      // Call mint_OBJKT: (pair (pair (address %address) (nat %amount)) (pair (bytes %metadata) (nat %royalties)))
       const op = await contract.methodsObject
         .mint_OBJKT({
           address: userAddress,
           amount: params.editions,
-          metadata: metadataUri,
+          metadata: metadataBytes,
           royalties: royalties,
         })
         .send();
