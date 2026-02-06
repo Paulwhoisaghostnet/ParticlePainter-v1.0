@@ -511,7 +511,7 @@ export async function exportMP4(
         "-i", "audio.mp3",
         "-c:v", "libx264",
         "-preset", "ultrafast", // Changed from 'fast' to 'ultrafast' for speed
-        "-crf", "23",
+        "-crf", "28",
         "-c:a", "aac",
         "-b:a", "192k",
         "-shortest",
@@ -550,7 +550,7 @@ export async function exportMP4(
         "-i", "input.webm",
         "-c:v", "libx264",
         "-preset", "ultrafast", // Changed from 'fast' to 'ultrafast' for speed
-        "-crf", "23",
+        "-crf", "28",
         "-an",
         "-movflags", "+faststart",
         "output.mp4",
