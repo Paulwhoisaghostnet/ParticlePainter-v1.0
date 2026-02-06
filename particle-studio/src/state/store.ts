@@ -248,6 +248,8 @@ type StudioState = {
   isGifExporting: boolean;
   exportMp4Nonce: number;
   isMp4Exporting: boolean;
+  exportProgress: number;
+  exportStatusMessage: string;
 
   // Wallet state
   walletConnected: boolean;
@@ -275,6 +277,7 @@ type StudioState = {
   setIsGifExporting: (v: boolean) => void;
   requestExportMp4: () => void;
   setIsMp4Exporting: (v: boolean) => void;
+  setExportProgress: (progress: number, message?: string) => void;
 
   // Wallet actions
   setWalletConnected: (connected: boolean, address: string | null, balance: number) => void;
@@ -414,6 +417,10 @@ export const useStudioStore = create<StudioState>((set, get) => ({
   requestExportMp4: () => set((s) => ({ exportMp4Nonce: s.exportMp4Nonce + 1 })),
 
   setIsMp4Exporting: (v) => set({ isMp4Exporting: v }),
+  
+  exportProgress: 0,
+  exportStatusMessage: "",
+  setExportProgress: (progress: number, message: string = "") => set({ exportProgress: progress, exportStatusMessage: message }),
 
   // Wallet actions
   setWalletConnected: (connected, address, balance) =>

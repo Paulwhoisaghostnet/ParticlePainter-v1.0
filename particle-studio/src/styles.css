@@ -4,8 +4,8 @@
   --panel2: #0f0f16;
   --text: #eaeaf2;
   --muted: #a3a3b8;
-  --stroke: rgba(255,255,255,0.10);
-  --stroke2: rgba(255,255,255,0.16);
+  --stroke: rgba(255, 255, 255, 0.10);
+  --stroke2: rgba(255, 255, 255, 0.16);
   --accent: #7c3aed;
   --accent-light: #9b6aff;
   --danger: #ff3d5a;
@@ -13,17 +13,35 @@
   --warning: #f59e0b;
   --radius: 14px;
   --radius-sm: 10px;
-  --shadow: 0 10px 30px rgba(0,0,0,0.45);
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
   font-synthesis: none;
   text-rendering: geometricPrecision;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-* { box-sizing: border-box; }
-html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Helvetica, Arial; }
-button, input { font: inherit; color: inherit; }
-a { color: inherit; }
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Helvetica, Arial;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+a {
+  color: inherit;
+}
 
 /* ============================================
    MAIN 3-COLUMN LAYOUT
@@ -98,8 +116,17 @@ a { color: inherit; }
   gap: 10px;
   align-items: baseline;
 }
-.brand h1 { font-size: 14px; margin: 0; letter-spacing: 0.2px; }
-.brand span { font-size: 12px; color: var(--muted); }
+
+.brand h1 {
+  font-size: 14px;
+  margin: 0;
+  letter-spacing: 0.2px;
+}
+
+.brand span {
+  font-size: 12px;
+  color: var(--muted);
+}
 
 .panelBody {
   padding: 12px 14px;
@@ -125,7 +152,12 @@ a { color: inherit; }
   margin: 0 auto;
 }
 
-canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
 
 /* ============================================
    LAYER TABS
@@ -144,12 +176,12 @@ canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
 }
 
 .layerTabs::-webkit-scrollbar-track {
-  background: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.05);
   border-radius: 2px;
 }
 
 .layerTabs::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.2);
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 2px;
 }
 
@@ -160,7 +192,7 @@ canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
   padding: 6px 12px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--stroke);
-  background: rgba(255,255,255,0.02);
+  background: rgba(255, 255, 255, 0.02);
   cursor: pointer;
   white-space: nowrap;
   transition: all 120ms ease;
@@ -168,13 +200,13 @@ canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
 }
 
 .layerTab:hover {
-  background: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.05);
   border-color: var(--stroke2);
 }
 
 .layerTab.active {
-  background: rgba(124,58,237,0.15);
-  border-color: rgba(124,58,237,0.4);
+  background: rgba(124, 58, 237, 0.15);
+  border-color: rgba(124, 58, 237, 0.4);
 }
 
 .layerTab .kindIcon {
@@ -196,7 +228,7 @@ canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
 
 .layerTab .closeBtn:hover {
   opacity: 1;
-  background: rgba(255,61,90,0.2);
+  background: rgba(255, 61, 90, 0.2);
 }
 
 .layerTab .layerOrderBtns {
@@ -210,7 +242,7 @@ canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
   border-radius: 4px;
   opacity: 0.6;
   cursor: pointer;
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.1);
   border: none;
   font-size: 10px;
   line-height: 1;
@@ -220,7 +252,7 @@ canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
 
 .layerTab .orderBtn:hover:not(:disabled) {
   opacity: 1;
-  background: rgba(124,58,237,0.3);
+  background: rgba(124, 58, 237, 0.3);
 }
 
 .layerTab .orderBtn:disabled {
@@ -242,7 +274,7 @@ canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
 .addLayerBtn:hover {
   border-color: var(--accent);
   color: var(--accent-light);
-  background: rgba(124,58,237,0.1);
+  background: rgba(124, 58, 237, 0.1);
 }
 
 /* ============================================
@@ -347,7 +379,7 @@ canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
   border: 1px solid var(--stroke);
   border-radius: var(--radius);
   padding: 10px;
-  background: rgba(255,255,255,0.03);
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .cardTitle {
@@ -383,29 +415,50 @@ canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
    ============================================ */
 .btn {
   border: 1px solid var(--stroke2);
-  background: rgba(255,255,255,0.04);
+  background: rgba(255, 255, 255, 0.04);
   padding: 9px 10px;
   border-radius: 12px;
   cursor: pointer;
   transition: transform 80ms ease, background 120ms ease;
   font-size: 12px;
 }
-.btn:hover { background: rgba(255,255,255,0.07); }
-.btn:active { transform: translateY(1px); }
+
+.btn:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
 
 .btnSm {
   padding: 6px 10px;
   font-size: 11px;
 }
 
-.btnPrimary { border-color: rgba(124,58,237,0.55); }
-.btnPrimary:hover { background: rgba(124,58,237,0.15); }
+.btnPrimary {
+  border-color: rgba(124, 58, 237, 0.55);
+}
 
-.btnDanger { border-color: rgba(255,61,90,0.55); }
-.btnDanger:hover { background: rgba(255,61,90,0.15); }
+.btnPrimary:hover {
+  background: rgba(124, 58, 237, 0.15);
+}
 
-.btnSuccess { border-color: rgba(34,197,94,0.55); }
-.btnSuccess:hover { background: rgba(34,197,94,0.15); }
+.btnDanger {
+  border-color: rgba(255, 61, 90, 0.55);
+}
+
+.btnDanger:hover {
+  background: rgba(255, 61, 90, 0.15);
+}
+
+.btnSuccess {
+  border-color: rgba(34, 197, 94, 0.55);
+}
+
+.btnSuccess:hover {
+  background: rgba(34, 197, 94, 0.15);
+}
 
 .btnIcon {
   padding: 6px 8px;
@@ -417,19 +470,33 @@ canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
 /* ============================================
    INPUTS & CONTROLS
    ============================================ */
-.hr { height: 1px; background: var(--stroke); margin: 12px 0; }
-.small { font-size: 12px; color: var(--muted); line-height: 1.35; }
+.hr {
+  height: 1px;
+  background: var(--stroke);
+  margin: 12px 0;
+}
 
-.select, .input {
+.small {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.select,
+.input {
   width: 100%;
   border: 1px solid var(--stroke2);
-  background: rgba(0,0,0,0.35);
+  background: rgba(0, 0, 0, 0.35);
   padding: 8px 10px;
   border-radius: 12px;
   font-size: 12px;
+  color: var(--text);
+  -webkit-text-fill-color: var(--text);
+  opacity: 1;
 }
 
-.input:focus, .select:focus {
+.input:focus,
+.select:focus {
   outline: none;
   border-color: var(--accent);
 }
@@ -464,11 +531,11 @@ canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
 .kbd {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: 11px;
-  color: rgba(255,255,255,0.75);
+  color: rgba(255, 255, 255, 0.75);
   border: 1px solid var(--stroke2);
   padding: 2px 6px;
   border-radius: 8px;
-  background: rgba(0,0,0,0.35);
+  background: rgba(0, 0, 0, 0.35);
 }
 
 /* ============================================
@@ -476,11 +543,11 @@ canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
    ============================================ */
 .badge {
   font-size: 11px;
-  color: rgba(255,255,255,0.82);
+  color: rgba(255, 255, 255, 0.82);
   border: 1px solid var(--stroke2);
   padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(255,255,255,0.03);
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .badgeKind {
@@ -490,10 +557,29 @@ canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
   letter-spacing: 0.3px;
 }
 
-.badgeKind.mask { border-color: rgba(249,115,22,0.4); background: rgba(249,115,22,0.1); color: #f97316; }
-.badgeKind.background { border-color: rgba(34,197,94,0.4); background: rgba(34,197,94,0.1); color: #22c55e; }
-.badgeKind.foreground { border-color: rgba(59,130,246,0.4); background: rgba(59,130,246,0.1); color: #3b82f6; }
-.badgeKind.directedFlow { border-color: rgba(168,85,247,0.4); background: rgba(168,85,247,0.1); color: #a855f7; }
+.badgeKind.mask {
+  border-color: rgba(249, 115, 22, 0.4);
+  background: rgba(249, 115, 22, 0.1);
+  color: #f97316;
+}
+
+.badgeKind.background {
+  border-color: rgba(34, 197, 94, 0.4);
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+}
+
+.badgeKind.foreground {
+  border-color: rgba(59, 130, 246, 0.4);
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.badgeKind.directedFlow {
+  border-color: rgba(168, 85, 247, 0.4);
+  background: rgba(168, 85, 247, 0.1);
+  color: #a855f7;
+}
 
 /* ============================================
    MODAL
@@ -501,7 +587,7 @@ canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
 .modalOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.7);
+  background: rgba(0, 0, 0, 0.7);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -550,17 +636,17 @@ canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
   padding: 14px 12px;
   cursor: pointer;
   transition: all 120ms ease;
-  background: rgba(255,255,255,0.02);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .kindOption:hover {
-  background: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.05);
   border-color: var(--stroke2);
 }
 
 .kindOption.selected {
   border-color: var(--accent);
-  background: rgba(124,58,237,0.1);
+  background: rgba(124, 58, 237, 0.1);
 }
 
 .kindOption .kindName {
@@ -583,7 +669,7 @@ canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
   width: 40px;
   height: 22px;
   border-radius: 11px;
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.1);
   cursor: pointer;
   transition: background 150ms ease;
 }
@@ -634,11 +720,11 @@ canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
 }
 
 .segmented button:hover {
-  background: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .segmented button.active {
-  background: rgba(124,58,237,0.2);
+  background: rgba(124, 58, 237, 0.2);
   color: var(--text);
 }
 
@@ -656,23 +742,23 @@ canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
     grid-template-columns: 1fr;
     grid-template-rows: auto 1fr auto auto;
   }
-  
+
   .leftPanel {
     grid-column: 1;
     grid-row: 1;
     max-height: 40vh;
   }
-  
+
   .canvasArea {
     grid-column: 1;
     grid-row: 2;
   }
-  
+
   .exportBar {
     grid-column: 1;
     grid-row: 3;
   }
-  
+
   .rightPanel {
     grid-column: 1;
     grid-row: 4;
@@ -713,4 +799,10 @@ canvas { display: block; width: 100%; height: 100%; object-fit: contain; }
   padding: 8px;
   border-radius: var(--radius-sm);
   background: rgba(0, 0, 0, 0.2);
+}
+
+/* Fix for select options visibility */
+.select option {
+  background-color: var(--panel) !important;
+  color: var(--text) !important;
 }

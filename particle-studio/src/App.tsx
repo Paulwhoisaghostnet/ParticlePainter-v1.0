@@ -36,6 +36,7 @@ export default function App() {
   const global = useStudioStore((s) => s.global);
   const setIsRecording = useStudioStore((s) => s.setIsRecording);
   const setIsGifExporting = useStudioStore((s) => s.setIsGifExporting);
+  const setExportProgress = useStudioStore((s) => s.setExportProgress);
 
   const engineRef = useRef<ParticleEngine | null>(null);
 
@@ -160,138 +161,206 @@ export default function App() {
     // Higher bitrate for higher FPS
     const bitrate = fps === 60 ? 16000000 : fps === 30 ? 10000000 : 8000000;
 
-    try {
-      if (resetOnStart) {
-        engineRef.current?.resetAll();
-      }
-      
-      const canvasStream = canvas.captureStream(fps);
-      const tracks = [...canvasStream.getTracks()];
-      
-      // Clear any previous audio destination
-      if (audioDestinationRef.current) {
-        try {
-          Tone.getDestination().disconnect(audioDestinationRef.current);
-          audioDestinationRef.current = null;
-        } catch (err) {
-          console.warn("Error disconnecting previous audio destination:", err);
-        }
-      }
-      
-      // Reset audio playback state tracking
-      audioWasPlayingRef.current = false;
-      
-      // Try to capture audio from Tone.js if audio is loaded
+    // Wrap in async IIFE to allow await for audio track initialization
+    (async () => {
       try {
-        const audioEngine = getAudioEngine();
-        if (audioEngine.isLoaded()) {
-          const audioCtx = Tone.context.rawContext;
-          if (audioCtx && audioCtx instanceof AudioContext) {
-            const audioDestination = audioCtx.createMediaStreamDestination();
-            audioDestinationRef.current = audioDestination;
-            
-            // Connect the Tone.js master output to the recording destination
-            // This ensures audio is captured even if not currently playing
-            Tone.getDestination().connect(audioDestination);
-            
-            // If audio is not playing, start it for the recording
-            audioWasPlayingRef.current = audioEngine.isPlaying();
-            if (!audioWasPlayingRef.current) {
-              audioEngine.play();
-            }
-            
-            const audioTracks = audioDestination.stream.getAudioTracks();
-            if (audioTracks.length > 0) {
-              tracks.push(...audioTracks);
-            }
-          }
+        if (resetOnStart) {
+          engineRef.current?.resetAll();
         }
-      } catch (audioErr) {
-        console.warn("Could not capture audio:", audioErr);
-      }
-      
-      const combinedStream = new MediaStream(tracks);
-      
-      // Try VP9+opus first for audio, fall back
-      const codecsToTry = [
-        "video/webm;codecs=vp9,opus",
-        "video/webm;codecs=vp8,opus",
-        "video/webm;codecs=vp9",
-        "video/webm;codecs=vp8",
-        "video/webm",
-      ];
-      
-      let mimeType = "video/webm";
-      for (const codec of codecsToTry) {
-        if (MediaRecorder.isTypeSupported(codec)) {
-          mimeType = codec;
-          break;
-        }
-      }
-      
-      const mediaRecorder = new MediaRecorder(combinedStream, {
-        mimeType,
-        videoBitsPerSecond: bitrate
-      });
-
-      recordedChunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          recordedChunksRef.current.push(e.data);
-        }
-      };
-
-      mediaRecorder.onstop = () => {
-        // Clean up audio destination connection if it was created
+        
+        const canvasStream = canvas.captureStream(fps);
+        const tracks = [...canvasStream.getTracks()];
+        
+        console.log("[WebM Recording] Starting WebM recording setup");
+        
+        // Clear any previous audio destination
         if (audioDestinationRef.current) {
           try {
             Tone.getDestination().disconnect(audioDestinationRef.current);
-            
-            // Restore original audio playback state
-            const audioEngine = getAudioEngine();
-            if (!audioWasPlayingRef.current && audioEngine.isPlaying()) {
-              audioEngine.pause();
-            }
-            
             audioDestinationRef.current = null;
           } catch (err) {
-            console.warn("Error disconnecting audio destination:", err);
+            // Ignore disconnect errors
           }
         }
         
-        const blob = new Blob(recordedChunksRef.current, { type: "video/webm" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `particle-studio-${Date.now()}-${fps}fps.webm`;
-        a.click();
-        URL.revokeObjectURL(url);
-        setIsRecording(false);
-        if (recordingTimeoutRef.current) {
-          window.clearTimeout(recordingTimeoutRef.current);
-          recordingTimeoutRef.current = null;
-        }
-      };
-
-      mediaRecorder.start(100); // collect data every 100ms
-      mediaRecorderRef.current = mediaRecorder;
-      setIsRecording(true);
-
-      if (durationSeconds > 0) {
-        if (recordingTimeoutRef.current) {
-          window.clearTimeout(recordingTimeoutRef.current);
-        }
-        recordingTimeoutRef.current = window.setTimeout(() => {
-          if (mediaRecorder.state === "recording") {
-            mediaRecorder.stop();
+        // Reset audio playback state tracking
+        audioWasPlayingRef.current = false;
+        
+        // Try to capture audio from Tone.js if audio is loaded
+        try {
+          const audioEngine = getAudioEngine();
+          
+          if (audioEngine.isLoaded()) {
+            const audioCtx = Tone.context.rawContext as AudioContext;
+            
+            // Duck typing: Check if it has the method we need instead of instanceof
+            // Tone.js rawContext doesn't pass instanceof checks even though it's an AudioContext
+            if (audioCtx && typeof audioCtx.createMediaStreamDestination === 'function') {
+              // Start audio playback BEFORE creating MediaStreamDestination
+              // The audio graph must be actively producing audio for tracks to appear
+              audioWasPlayingRef.current = audioEngine.isPlaying();
+              if (!audioWasPlayingRef.current) {
+                console.log("[WebM Recording] Starting audio playback for recording");
+                audioEngine.play();
+                await new Promise(resolve => setTimeout(resolve, 100));
+              }
+              
+              const audioDestination = audioCtx.createMediaStreamDestination();
+              audioDestinationRef.current = audioDestination;
+              
+              // Connect Player directly for audio capture
+              const player = (audioEngine as any).player as Tone.Player | null;
+              if (player) {
+                player.connect(audioDestination as any);
+                console.log("[WebM Recording] Connected audio player to recording stream");
+              }
+              
+              // Workaround: Create a silent test oscillator to ensure MediaStreamDestination creates tracks
+              // This is needed because Tone.js nodes don't always trigger track creation
+              const testOsc = audioCtx.createOscillator();
+              const testGain = audioCtx.createGain();
+              testGain.gain.value = 0.0001; // Nearly silent
+              testOsc.connect(testGain);
+              testGain.connect(audioDestination);
+              testOsc.start();
+              
+              // Wait for audio tracks to appear
+              await new Promise(resolve => setTimeout(resolve, 200));
+              
+              let audioTracks = audioDestination.stream.getAudioTracks();
+              let attempts = 0;
+              while (audioTracks.length === 0 && attempts < 5) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                audioTracks = audioDestination.stream.getAudioTracks();
+                attempts++;
+              }
+              
+              if (audioTracks.length > 0) {
+                tracks.push(...audioTracks);
+                console.log("[WebM Recording] Audio captured successfully -", audioTracks.length, "track(s)");
+              } else {
+                console.warn("[WebM Recording] No audio tracks found after retries");
+              }
+            }
+          } else {
+            console.warn("[WebM Recording] Audio not loaded - WebM will have no audio");
           }
-        }, durationSeconds * 1000);
+        } catch (audioErr) {
+          console.error("[WebM Recording] Audio capture error:", audioErr);
+        }
+        
+        const combinedStream = new MediaStream(tracks);
+        console.log("[WebM Recording] Combined stream - Video tracks:", combinedStream.getVideoTracks().length, "Audio tracks:", combinedStream.getAudioTracks().length);
+        
+        // Try VP9+opus first for audio, fall back
+        const codecsToTry = [
+          "video/webm;codecs=vp9,opus",
+          "video/webm;codecs=vp8,opus",
+          "video/webm;codecs=vp9",
+          "video/webm;codecs=vp8",
+          "video/webm",
+        ];
+        
+        let mimeType = "video/webm";
+        for (const codec of codecsToTry) {
+          if (MediaRecorder.isTypeSupported(codec)) {
+            mimeType = codec;
+            console.log("[WebM Recording] Selected codec:", mimeType);
+            break;
+          }
+        }
+        
+        const mediaRecorder = new MediaRecorder(combinedStream, {
+          mimeType,
+          videoBitsPerSecond: bitrate,
+          audioBitsPerSecond: 192000, // Explicitly set audio bitrate
+        });
+
+        recordedChunksRef.current = [];
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) {
+            recordedChunksRef.current.push(e.data);
+          }
+        };
+
+        mediaRecorder.onstop = () => {
+          // Clean up audio destination connection if it was created
+          if (audioDestinationRef.current) {
+            try {
+              Tone.getDestination().disconnect(audioDestinationRef.current);
+              
+              // Restore original audio playback state
+              const audioEngine = getAudioEngine();
+              if (!audioWasPlayingRef.current && audioEngine.isPlaying()) {
+                audioEngine.pause();
+              }
+              
+              audioDestinationRef.current = null;
+            } catch (err) {
+              console.warn("Error disconnecting audio destination:", err);
+            }
+          }
+          
+          const blob = new Blob(recordedChunksRef.current, { type: "video/webm" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `particle-studio-${Date.now()}-${fps}fps.webm`;
+          a.click();
+          URL.revokeObjectURL(url);
+          setIsRecording(false);
+          if (recordingTimeoutRef.current) {
+            clearInterval(recordingTimeoutRef.current);
+            recordingTimeoutRef.current = null;
+          }
+          setExportProgress(1, "Done!");
+          // Reset progress after a short delay
+          setTimeout(() => setExportProgress(0, ""), 2000);
+        };
+
+        const setExportProgress = useStudioStore.getState().setExportProgress;
+        setExportProgress(0, "Recording...");
+
+        mediaRecorder.start(100); // collect data every 100ms
+        mediaRecorderRef.current = mediaRecorder;
+        setIsRecording(true);
+        
+        // Start progress tracking if duration is set
+        if (durationSeconds > 0) {
+          const startTime = Date.now();
+          const durationMs = durationSeconds * 1000;
+          
+          // Clear any existing interval
+          if (recordingTimeoutRef.current) {
+            clearInterval(recordingTimeoutRef.current);
+          }
+           
+          // Use an interval to update progress
+          const progressInterval = setInterval(() => {
+             const elapsed = Date.now() - startTime;
+             const progress = Math.min(1, elapsed / durationMs);
+             setExportProgress(progress, `Recording... ${Math.round(elapsed / 1000)}s / ${durationSeconds}s`);
+             
+             if (elapsed >= durationMs) {
+                clearInterval(progressInterval);
+                if (mediaRecorder.state === "recording") {
+                   mediaRecorder.stop();
+                }
+             }
+          }, 100);
+          
+          // Store interval ID in ref (casting to any/number to avoid type issues)
+          recordingTimeoutRef.current = progressInterval as any;
+        } else {
+             // Manual stop: still update progress message but no %
+             setExportProgress(0, "Recording...");
+        }
+      } catch (err) {
+        console.error("Failed to start recording:", err);
+        setIsRecording(false);
       }
-    } catch (err) {
-      console.error("Failed to start recording:", err);
-      setIsRecording(false);
-    }
+    })(); // Close async IIFE
   }, [startRecordingNonce, setIsRecording]);
 
   useEffect(() => {
@@ -306,7 +375,7 @@ export default function App() {
       mediaRecorderRef.current = null;
     }
     if (recordingTimeoutRef.current) {
-      window.clearTimeout(recordingTimeoutRef.current);
+      clearInterval(recordingTimeoutRef.current);
       recordingTimeoutRef.current = null;
     }
   }, [stopRecordingNonce]);
@@ -356,6 +425,7 @@ export default function App() {
 
     let cancelled = false;
     setIsGifExporting(true);
+    setExportProgress(0, "Initializing...");
 
     (async () => {
       try {
@@ -374,9 +444,17 @@ export default function App() {
           offCtx.drawImage(canvas, 0, 0, offscreen.width, offscreen.height);
 
           gif.addFrame(offCtx, { copy: true, delay: frameDurationMs });
+          
+          // Update progress (capturing matches first 50%) - throttled to every 5 frames
+          if (i % 5 === 0 || i === totalFrames - 1) {
+            setExportProgress((i / totalFrames) * 0.5, `Capturing frame ${i + 1}/${totalFrames}`);
+          }
         }
+        
+        setExportProgress(0.5, "Rendering GIF...");
 
         gif.on("finished", (blob: Blob) => {
+          setExportProgress(1, "Done!");
           const url = URL.createObjectURL(blob);
           const a = document.createElement("a");
           a.href = url;
@@ -388,6 +466,11 @@ export default function App() {
 
         gif.on("abort", () => {
           setIsGifExporting(false);
+        });
+
+        // Add progress listener for rendering phase (remaining 50%)
+        gif.on("progress", (p: number) => {
+          setExportProgress(0.5 + (p * 0.5), `Rendering ${Math.round(p * 100)}%`);
         });
 
         gif.render();
@@ -405,6 +488,7 @@ export default function App() {
 
   // MP4 export with audio
   const exportMp4Nonce = useStudioStore((s) => s.exportMp4Nonce);
+
   const setIsMp4Exporting = useStudioStore((s) => s.setIsMp4Exporting);
   const lastMp4NonceRef = useRef(0);
 
@@ -448,11 +532,13 @@ export default function App() {
     }
 
     setIsMp4Exporting(true);
+    setExportProgress(0, "Initializing MP4...");
     console.log("=== Starting MP4 Export ===");
     console.log(`Duration: ${durationMs}ms, FPS: ${fps}, Has Audio: ${!!audioUrl}`);
 
     exportMP4(canvas, audioUrl ?? null, durationMs, fps, (progress) => {
       console.log(`MP4 Export: ${progress.message} (${Math.round(progress.progress * 100)}%)`);
+      setExportProgress(progress.progress, progress.message);
     })
       .then((blob) => {
         console.log("=== MP4 Export Successful ===");
