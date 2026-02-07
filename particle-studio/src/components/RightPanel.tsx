@@ -1,6 +1,6 @@
 import { useMemo, useState, useCallback } from "react";
 import { useStudioStore } from "../state/store";
-import type { ParticleShape, ColorMode, ColorScheme } from "../state/types";
+import type { ParticleShape, ColorMode, ColorScheme, ResolutionPreset } from "../state/types";
 import { SliderRow } from "./ui/SliderRow";
 import { SwitchRow } from "./ui/SwitchRow";
 import { AudioControls } from "./AudioControls";
@@ -153,6 +153,62 @@ export function RightPanel() {
             checked={global.invert}
             onCheckedChange={(b) => setGlobal({ invert: b })}
           />
+        </div>
+
+        <div className="hr" />
+
+        {/* Resolution settings */}
+        <div className="section">
+          <h3 className="sectionTitle">Resolution</h3>
+          <div className="row">
+            <span className="rowLabel">Preset</span>
+            <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+              {(["512x512", "1080x1080", "2048x2048", "custom"] as ResolutionPreset[]).map((preset) => (
+                <button
+                  key={preset}
+                  className={`btn btnSm ${global.resolutionPreset === preset ? "btnPrimary" : ""}`}
+                  onClick={() => setGlobal({ resolutionPreset: preset })}
+                >
+                  {preset === "custom" ? "Custom" : preset}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {global.resolutionPreset === "custom" && (
+            <>
+              <div className="row">
+                <span className="rowLabel">Width</span>
+                <input
+                  type="number"
+                  className="input inputSm"
+                  style={{ width: 100 }}
+                  value={global.customWidth}
+                  min={256}
+                  max={4096}
+                  step={1}
+                  onChange={(e) => setGlobal({ customWidth: parseInt(e.target.value, 10) || 256 })}
+                />
+              </div>
+              <div className="row">
+                <span className="rowLabel">Height</span>
+                <input
+                  type="number"
+                  className="input inputSm"
+                  style={{ width: 100 }}
+                  value={global.customHeight}
+                  min={256}
+                  max={4096}
+                  step={1}
+                  onChange={(e) => setGlobal({ customHeight: parseInt(e.target.value, 10) || 256 })}
+                />
+              </div>
+            </>
+          )}
+
+          <div className="small" style={{ marginTop: 8, opacity: 0.7 }}>
+            Canvas/output resolution for all exports. Higher = more memory.
+          </div>
         </div>
 
         <div className="hr" />
