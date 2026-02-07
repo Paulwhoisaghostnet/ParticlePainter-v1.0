@@ -213,6 +213,10 @@ export async function quickExportWebM(
       }
 
       const frame = frames[frameIndex];
+      
+      // Clear the canvas before drawing each frame
+      // The frames already have the clearRate effect baked in from the main render
+      ctx.clearRect(0, 0, width, height);
       ctx.putImageData(frame.imageData, 0, 0);
 
       onProgress?.({
