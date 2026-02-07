@@ -2,7 +2,7 @@ import { create } from "zustand";
 import type { 
   GlobalConfig, LayerConfig, ParticleType, ParticleShape, LayerKind, MaskTransform, 
   MaterialPreset, GlyphPaletteEntry, SpawnConfig, MovementConfig, BorderEffectConfig,
-  ColorRegionEffect, AttractionPoint, BoundaryMode, WaveCardinalDirection
+  ColorRegionEffect, AttractionPoint, BoundaryMode, WaveCardinalDirection, ResolutionPreset
 } from "./types";
 
 // Default material presets
@@ -234,6 +234,26 @@ const defaultLayer = (name: string, type: ParticleType, particleCount: number, k
   glyphScaleJitter: 0
 });
 
+// Helper function to get current resolution dimensions based on global config
+export function getResolutionDimensions(global: GlobalConfig): { width: number; height: number } {
+  if (global.resolutionPreset === "custom") {
+    return {
+      width: Math.max(256, Math.min(4096, global.customWidth)),
+      height: Math.max(256, Math.min(4096, global.customHeight))
+    };
+  }
+  
+  // Parse preset (e.g., "512x512" -> { width: 512, height: 512 })
+  const match = global.resolutionPreset.match(/^(\d+)x(\d+)$/);
+  if (match) {
+    const size = parseInt(match[1], 10);
+    return { width: size, height: size };
+  }
+  
+  // Fallback to 2048x2048
+  return { width: 2048, height: 2048 };
+}
+
 type StudioState = {
   global: GlobalConfig;
   layers: LayerConfig[];
@@ -307,11 +327,14 @@ export const useStudioStore = create<StudioState>((set, get) => ({
     audioPlaying: false,
     audioVolume: 0.8,
     audioGain: 1.0, // Default gain multiplier for audio reactivity
+    // Resolution settings
+    resolutionPreset: "2048x2048" as ResolutionPreset,
+    customWidth: 1920,
+    customHeight: 1080,
     // Rolling buffer defaults (disabled by default to save resources)
     bufferEnabled: false,
     bufferDuration: 5,
     bufferFps: 24,
-    bufferQuality: "low",
     // Welcome popup
     showWelcome: true // Show welcome popup on first load
   },

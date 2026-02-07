@@ -1,6 +1,7 @@
 import { useStudioStore } from "../state/store";
 import { SliderRow } from "./ui/SliderRow";
 import { SwitchRow } from "./ui/SwitchRow";
+import type { ResolutionPreset } from "../state/types";
 
 export function StudioControls() {
   const global = useStudioStore((s) => s.global);
@@ -181,6 +182,63 @@ export function StudioControls() {
         <div className="small" style={{ marginTop: 10 }}>
           Tips: Use a high-contrast mask (black = inside). For the "gif look", keep fade low
           (0.03–0.10) and raise curl + dither.
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="cardTitle">
+          <span>Resolution</span>
+          <span className="badge">{global.resolutionPreset === "custom" ? `${global.customWidth}×${global.customHeight}` : global.resolutionPreset}</span>
+        </div>
+
+        <div className="row">
+          <div className="small">Preset</div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {(["512x512", "1080x1080", "2048x2048", "custom"] as ResolutionPreset[]).map((preset) => (
+              <button
+                key={preset}
+                className={`btn ${global.resolutionPreset === preset ? "btnPrimary" : ""}`}
+                style={{ padding: "6px 12px", fontSize: 12 }}
+                onClick={() => setGlobal({ resolutionPreset: preset })}
+              >
+                {preset === "custom" ? "Custom" : preset}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {global.resolutionPreset === "custom" && (
+          <>
+            <div className="row">
+              <label className="small">Width</label>
+              <input
+                type="number"
+                value={global.customWidth}
+                min={256}
+                max={4096}
+                step={1}
+                onChange={(e) => setGlobal({ customWidth: parseInt(e.target.value, 10) || 256 })}
+                style={{ width: "100px", padding: "4px 8px", fontSize: 12 }}
+              />
+            </div>
+            <div className="row">
+              <label className="small">Height</label>
+              <input
+                type="number"
+                value={global.customHeight}
+                min={256}
+                max={4096}
+                step={1}
+                onChange={(e) => setGlobal({ customHeight: parseInt(e.target.value, 10) || 256 })}
+                style={{ width: "100px", padding: "4px 8px", fontSize: 12 }}
+              />
+            </div>
+          </>
+        )}
+
+        <div className="small" style={{ marginTop: 10 }}>
+          Canvas/output resolution. Rolling buffer and all exports use this resolution.
+          Higher resolutions use more memory.
         </div>
       </div>
     </>

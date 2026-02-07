@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import GIF from "gif.js";
 import * as Tone from "tone";
 import { useStudioStore } from "./state/store";
+import { getResolutionDimensions } from "./state/store";
 import { LeftPanel } from "./components/LeftPanel";
 import { RightPanel } from "./components/RightPanel";
 import { ExportBar } from "./components/ExportBar";
@@ -10,8 +11,6 @@ import { getAudioEngine } from "./components/AudioControls";
 import { exportMP4, downloadBlob, getExportLogs } from "./engine/VideoExporter";
 import { getFrameBuffer } from "./engine/FrameBuffer";
 import { WelcomePopup } from "./components/WelcomePopup";
-
-const LOCKED_SIZE = 2048;
 
 export default function App() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -47,7 +46,9 @@ export default function App() {
     const engine = new ParticleEngine(canvas);
     engineRef.current = engine;
 
-    engine.resize(LOCKED_SIZE, LOCKED_SIZE);
+    // Set initial resolution from global state
+    const resolution = getResolutionDimensions(useStudioStore.getState().global);
+    engine.resize(resolution.width, resolution.height);
 
     const onKey = (e: KeyboardEvent) => {
       if (e.key.toLowerCase() === " ") {
@@ -73,6 +74,15 @@ export default function App() {
     };
   }, []);
 
+  // Update canvas resolution when resolution settings change
+  useEffect(() => {
+    const engine = engineRef.current;
+    if (!engine) return;
+    
+    const resolution = getResolutionDimensions(global);
+    engine.resize(resolution.width, resolution.height);
+  }, [global.resolutionPreset, global.customWidth, global.customHeight]);
+
   // Update frame buffer config when settings change
   useEffect(() => {
     const frameBuffer = getFrameBuffer();
@@ -80,9 +90,8 @@ export default function App() {
       enabled: global.bufferEnabled,
       durationSeconds: global.bufferDuration,
       fps: global.bufferFps,
-      quality: global.bufferQuality,
     });
-  }, [global.bufferEnabled, global.bufferDuration, global.bufferFps, global.bufferQuality]);
+  }, [global.bufferEnabled, global.bufferDuration, global.bufferFps]);
 
   useEffect(() => {
     const engine = engineRef.current;

@@ -2,13 +2,12 @@
  * Rolling Frame Buffer for Quick Export
  * 
  * Maintains a circular buffer of recent canvas frames for instant replay exports.
- * Uses ImageData storage with configurable resolution scaling to balance
- * memory usage vs quality.
+ * Uses ImageData storage at the same resolution as the canvas.
  * 
- * Memory estimation (at "low" quality - 512x512):
- * - Each frame ~1MB RGBA
- * - 5 seconds at 24fps = 120 frames = ~120MB
- * - This is manageable for modern browsers
+ * Memory estimation (at 2048x2048):
+ * - Each frame ~16MB RGBA
+ * - 5 seconds at 24fps = 120 frames = ~1.9GB
+ * - At lower resolutions like 512x512, 5 seconds = ~120MB
  */
 
 export type BufferedFrame = {
@@ -20,21 +19,12 @@ export type FrameBufferConfig = {
   enabled: boolean;
   durationSeconds: number; // How many seconds to buffer (2-10)
   fps: number; // Target FPS for buffer capture (15-30)
-  quality: "low" | "medium" | "high"; // Resolution scale
 };
-
-// Quality presets with resolution scaling
-const QUALITY_SCALE = {
-  low: 0.25,    // 512x512 from 2048x2048
-  medium: 0.5,  // 1024x1024 from 2048x2048
-  high: 1.0,    // Full resolution (memory intensive!)
-} as const;
 
 export const DEFAULT_BUFFER_CONFIG: FrameBufferConfig = {
   enabled: false, // Disabled by default to avoid memory overhead
   durationSeconds: 5,
   fps: 24,
-  quality: "low",
 };
 
 export class FrameBuffer {
@@ -55,7 +45,6 @@ export class FrameBuffer {
 
   updateConfig(config: Partial<FrameBufferConfig>) {
     const wasEnabled = this.config.enabled;
-    const oldQuality = this.config.quality;
     this.config = { ...this.config, ...config };
     
     // Recalculate max frames
@@ -64,11 +53,6 @@ export class FrameBuffer {
     
     // If disabled, clear the buffer
     if (!this.config.enabled) {
-      this.clear();
-    }
-    
-    // If quality changed, clear buffer to ensure consistent frame dimensions
-    if (config.quality && config.quality !== oldQuality) {
       this.clear();
     }
     
@@ -82,9 +66,8 @@ export class FrameBuffer {
    * Initialize the offscreen canvas based on source canvas dimensions
    */
   private initOffscreenCanvas(sourceWidth: number, sourceHeight: number) {
-    const scale = QUALITY_SCALE[this.config.quality];
-    this.targetWidth = Math.floor(sourceWidth * scale);
-    this.targetHeight = Math.floor(sourceHeight * scale);
+    this.targetWidth = sourceWidth;
+    this.targetHeight = sourceHeight;
     
     // Only recreate if dimensions changed
     if (this.offscreenCanvas?.width !== this.targetWidth || 
@@ -118,7 +101,7 @@ export class FrameBuffer {
     if (!this.offscreenCtx || !this.offscreenCanvas) return false;
     
     try {
-      // Draw scaled-down version of canvas
+      // Draw full-resolution version of canvas (no scaling)
       this.offscreenCtx.drawImage(
         canvas,
         0, 0, canvas.width, canvas.height,
@@ -176,7 +159,6 @@ export class FrameBuffer {
     durationMs: number;
     memoryEstimateMB: number;
     isEnabled: boolean;
-    quality: string;
   } {
     const frameSize = this.targetWidth * this.targetHeight * 4; // RGBA
     const memoryBytes = this.frames.length * frameSize;
@@ -192,7 +174,6 @@ export class FrameBuffer {
       durationMs,
       memoryEstimateMB: Math.round(memoryBytes / (1024 * 1024) * 10) / 10,
       isEnabled: this.config.enabled,
-      quality: this.config.quality,
     };
   }
 

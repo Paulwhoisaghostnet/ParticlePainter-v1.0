@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useStudioStore } from "../state/store";
 import { getAudioEngine } from "./AudioControls";
-import type { GifDuration, WebmDuration, Mp4Duration, BufferQuality } from "../state/types";
+import type { GifDuration, WebmDuration, Mp4Duration } from "../state/types";
 import { exportSceneAsHTML } from "../engine/HTMLExporter";
 import { getFrameBuffer } from "../engine/FrameBuffer";
 import { quickExportGif, quickExportWebM, downloadBlob } from "../engine/QuickExport";
@@ -79,7 +79,6 @@ export function ExportBar() {
   const webmDurations: WebmDuration[] = [0, 5, 15, 30, 60];
   const mp4Durations: Mp4Duration[] = [15, 30, 60, -1];
   const bufferDurations = [2, 3, 5, 8, 10];
-  const bufferQualities: BufferQuality[] = ["low", "medium", "high"];
 
   const formatDuration = (d: number) => {
     if (d === 0) return "∞";
@@ -476,21 +475,6 @@ export function ExportBar() {
                       onClick={() => setGlobal({ bufferDuration: d })}
                     >
                       {d}s
-                    </button>
-                  ))}
-                </div>
-                
-                {/* Quality selector */}
-                <div className="exportDropdownLabel">Quality</div>
-                <div className="segmented" style={{ marginBottom: 8 }}>
-                  {bufferQualities.map((q) => (
-                    <button
-                      key={q}
-                      className={global.bufferQuality === q ? "active" : ""}
-                      onClick={() => setGlobal({ bufferQuality: q })}
-                      title={q === "low" ? "512px (fast)" : q === "medium" ? "1024px" : "2048px (slow)"}
-                    >
-                      {q.charAt(0).toUpperCase() + q.slice(1)}
                     </button>
                   ))}
                 </div>
