@@ -100,6 +100,7 @@ export function MintModal({ onClose }: MintModalProps) {
           fileBlob,
           fileName,
           mimeType,
+          royalties: 100, // Default to 10%
         },
         walletAddress,
         (msg) => setProgress(msg)
