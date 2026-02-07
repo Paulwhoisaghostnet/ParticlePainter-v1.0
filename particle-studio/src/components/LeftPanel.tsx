@@ -68,6 +68,7 @@ export function LeftPanel() {
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
           <span className="kbd">Space</span>
           <span className="kbd">R</span>
+          <span className="kbd">H</span>
         </div>
       </div>
 
@@ -93,39 +94,36 @@ export function LeftPanel() {
         {/* Layer tabs */}
         <LayerTabs onAddClick={() => setAddModalOpen(true)} />
 
-        {layer && (
-          <>
-            {/* Layer info */}
-            <div className="section">
-              <h3 className="sectionTitle">Layer Settings</h3>
+        {/* Layer settings header & import/export (always visible) */}
+        <div className="section">
+          <h3 className="sectionTitle">Layer Settings</h3>
 
-              {/* Layer import/export buttons */}
-              <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-                <button
-                  className="btn btnSm"
-                  style={{ flex: 1 }}
-                  onClick={() => exportLayerSettings(layer)}
-                  title="Export layer settings as JSON"
-                >
-                  📤 Export Settings
-                </button>
-                <button
-                  className="btn btnSm"
-                  style={{ flex: 1 }}
-                  onClick={() => importInputRef.current?.click()}
-                  title="Import layer settings from JSON"
-                >
-                  📥 Import Settings
-                </button>
-                <input
-                  ref={importInputRef}
-                  type="file"
-                  accept=".json"
-                  style={{ display: "none" }}
-                  onChange={handleImportLayerSettings}
-                />
-              </div>
+          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+            <button
+              className="btn btnSm"
+              style={{ flex: 1, opacity: layer ? 1 : 0.5, cursor: layer ? "pointer" : "not-allowed" }}
+            >
+              📤 Export Settings
+            </button>
+            <button
+              className="btn btnSm"
+              style={{ flex: 1 }}
+              onClick={() => importInputRef.current?.click()}
+              title="Import layer settings from JSON"
+            >
+              📥 Import Settings
+            </button>
+            <input
+              ref={importInputRef}
+              type="file"
+              accept=".json"
+              style={{ display: "none" }}
+              onChange={handleImportLayerSettings}
+            />
+          </div>
 
+          {layer && (
+            <>
               <div className="row">
                 <span className="rowLabel">Name</span>
                 <input
@@ -193,8 +191,12 @@ export function LeftPanel() {
                   {layer.particleCount.toLocaleString()} particles
                 </div>
               </div>
-            </div>
+            </>
+          )}
+        </div>
 
+        {layer && (
+          <>
             <div className="hr" />
 
             {/* Spawn */}

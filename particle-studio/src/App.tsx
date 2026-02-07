@@ -59,6 +59,10 @@ export default function App() {
       if (e.key.toLowerCase() === "s") {
         useStudioStore.getState().requestScreenshot();
       }
+      if (e.key.toLowerCase() === "h") {
+        const { showWelcome } = useStudioStore.getState().global;
+        useStudioStore.getState().setGlobal({ showWelcome: !showWelcome });
+      }
     };
     window.addEventListener("keydown", onKey);
 
