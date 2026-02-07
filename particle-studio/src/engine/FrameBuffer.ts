@@ -101,6 +101,9 @@ export class FrameBuffer {
     if (!this.offscreenCtx || !this.offscreenCanvas) return false;
     
     try {
+      // Clear the canvas before drawing the new frame
+      this.offscreenCtx.clearRect(0, 0, this.targetWidth, this.targetHeight);
+      
       // Draw full-resolution version of canvas (no scaling)
       this.offscreenCtx.drawImage(
         canvas,
