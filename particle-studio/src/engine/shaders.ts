@@ -863,12 +863,31 @@ void main(){
   // Scale by gravity to make it feel like natural rolling (heavier particles roll faster)
   vec2 depthForce = -getDepthGradient(pos) * abs(effectiveGravity) * 5.0;
 
+  // Ground plane slope force: particles roll down the tilted ground plane
+  // Only apply when ground plane is enabled and particle is near the ground
+  vec2 groundForce = vec2(0.0);
+  if(u_groundPlaneEnabled > 0.5) {
+    float cosT = cos(u_groundTilt);
+    float sinT = sin(u_groundTilt);
+    // Ground plane normal points upward from the tilted plane
+    // The tangent (perpendicular to normal) is the downhill direction
+    vec2 groundDownhill = vec2(cosT, -sinT); // Perpendicular to normal, pointing downhill
+    // Distance from particle to ground plane (in Y direction for simplicity)
+    float distToGround = pos.y - u_groundY;
+    // Apply force proportional to distance (stronger when closer)
+    // Only apply when particle is above and near the ground (within 0.3 units)
+    if(distToGround > 0.0 && distToGround < 0.3) {
+      float proximity = 1.0 - (distToGround / 0.3); // 1.0 at ground, 0.0 at distance 0.3
+      groundForce = groundDownhill * abs(effectiveGravity) * 3.0 * proximity;
+    }
+  }
+
   // Calculate intrinsic movement from pattern system
   vec2 patternForce = patternMovement(pos, v_uv.x, u_time);
 
   // Integrate velocity - mass affects inertia (heavier = slower acceleration)
   float inertiaFactor = 1.0 / max(tp.mass, 0.1);
-  vel += (g + aForce + windForce + f + j + depthForce + patternForce) * u_dt * inertiaFactor;
+  vel += (g + aForce + windForce + f + j + depthForce + groundForce + patternForce) * u_dt * inertiaFactor;
 
   // ============ TYPE-SPECIFIC BEHAVIORS ============
   
