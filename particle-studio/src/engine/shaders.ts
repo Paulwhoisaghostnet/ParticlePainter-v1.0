@@ -858,12 +858,17 @@ void main(){
   float jt = u_jitter * tp.jitterScale;
   vec2 j = (vec2(rand(pos+u_time), rand(pos.yx-u_time)) - 0.5) * jt;
 
+  // Depth gradient force: particles roll down slopes in the depth field
+  // The gradient points uphill, so we negate it to get downhill force
+  // Scale by gravity to make it feel like natural rolling (heavier particles roll faster)
+  vec2 depthForce = -getDepthGradient(pos) * abs(effectiveGravity) * 5.0;
+
   // Calculate intrinsic movement from pattern system
   vec2 patternForce = patternMovement(pos, v_uv.x, u_time);
 
   // Integrate velocity - mass affects inertia (heavier = slower acceleration)
   float inertiaFactor = 1.0 / max(tp.mass, 0.1);
-  vel += (g + aForce + windForce + f + j + patternForce) * u_dt * inertiaFactor;
+  vel += (g + aForce + windForce + f + j + depthForce + patternForce) * u_dt * inertiaFactor;
 
   // ============ TYPE-SPECIFIC BEHAVIORS ============
   
