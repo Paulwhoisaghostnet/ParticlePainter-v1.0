@@ -10,6 +10,17 @@ import {
 } from "./shaders";
 import type { AudioAnalysisData } from "./AudioEngine";
 
+// Constants
+const MAX_ATTRACTION_POINTS = 8;
+
+// Attraction type and effect mappings (constant to avoid recreation)
+const ATTRACTION_TYPE_MAP: Record<string, number> = { 
+  direct: 0, spiral: 1, blackhole: 2, pulsing: 3, magnetic: 4 
+};
+const ATTRACTION_EFFECT_MAP: Record<string, number> = { 
+  none: 0, despawn: 1, orbit: 2, concentrate: 3, transform: 4, passToNext: 5 
+};
+
 // Apply audio mapping to a base value
 function applyAudioMapping(
   baseValue: number,
@@ -570,6 +581,26 @@ export class ParticleEngine {
     gl.uniform1f(gl.getUniformLocation(this.simProg, "u_attract"), l.attract);
     gl.uniform1f(gl.getUniformLocation(this.simProg, "u_attractFalloff"), l.attractFalloff ?? 1.0);
     gl.uniform2f(gl.getUniformLocation(this.simProg, "u_attractPoint"), l.attractPoint.x, l.attractPoint.y);
+    
+    // Multiple attraction points system
+    const attractionPoints = l.attractionPoints || [];
+    const enabledPoints = attractionPoints.filter(p => p.enabled);
+    const pointCount = Math.min(enabledPoints.length, MAX_ATTRACTION_POINTS);
+    gl.uniform1i(gl.getUniformLocation(this.simProg, "u_attractionPointCount"), pointCount);
+    
+    for (let i = 0; i < pointCount; i++) {
+      const point = enabledPoints[i];
+      gl.uniform2f(gl.getUniformLocation(this.simProg, `u_attractionPositions[${i}]`), point.position.x, point.position.y);
+      gl.uniform1f(gl.getUniformLocation(this.simProg, `u_attractionStrengths[${i}]`), point.strength);
+      gl.uniform1f(gl.getUniformLocation(this.simProg, `u_attractionFalloffs[${i}]`), point.falloff);
+      
+      gl.uniform1i(gl.getUniformLocation(this.simProg, `u_attractionTypes[${i}]`), ATTRACTION_TYPE_MAP[point.type] ?? 0);
+      gl.uniform1i(gl.getUniformLocation(this.simProg, `u_attractionEffects[${i}]`), ATTRACTION_EFFECT_MAP[point.effect] ?? 0);
+      
+      gl.uniform1f(gl.getUniformLocation(this.simProg, `u_attractionPulseFreqs[${i}]`), point.pulseFrequency ?? 1.0);
+      gl.uniform1i(gl.getUniformLocation(this.simProg, `u_attractionEnabled[${i}]`), point.enabled ? 1 : 0);
+    }
+    
     // Wind: convert degrees to radians
     const windAngleRad = ((l.windAngle ?? 0) * Math.PI) / 180;
     gl.uniform1f(gl.getUniformLocation(this.simProg, "u_windAngle"), windAngleRad);

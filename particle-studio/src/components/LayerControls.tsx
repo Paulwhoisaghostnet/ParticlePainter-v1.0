@@ -240,8 +240,8 @@ export function LayerControls({ selected }: { selected?: LayerConfig }) {
         <SliderRow
           label="Attract"
           value={layer.attract}
-          min={0}
-          max={0.5}
+          min={-2}
+          max={2}
           step={0.01}
           onChange={(v) => setLayer(layer.id, { attract: v })}
         />

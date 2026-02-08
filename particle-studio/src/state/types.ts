@@ -275,7 +275,7 @@ export type LayerConfig = {
   drag: number; // 0..0.5
   jitter: number; // 0..1 (scaled internally by type)
   curl: number; // 0..1 (flow field strength)
-  attract: number; // 0..0.5 (attraction to point) - LEGACY, use attractionPoints
+  attract: number; // -2..2 (attraction to point, negative = repulsion) - LEGACY, use attractionPoints
   attractFalloff: number; // 0..2 (how fast attraction weakens with distance, 0=constant, 2=inverse square)
   attractPoint: { x: number; y: number }; // normalized 0..1 - LEGACY, use attractionPoints
   attractionPoints: AttractionPoint[]; // Multiple attraction points system
