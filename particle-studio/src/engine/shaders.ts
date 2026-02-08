@@ -858,12 +858,41 @@ void main(){
   float jt = u_jitter * tp.jitterScale;
   vec2 j = (vec2(rand(pos+u_time), rand(pos.yx-u_time)) - 0.5) * jt;
 
+  // Depth gradient force: particles roll down slopes in the depth field
+  // The gradient points uphill, so we negate it to get downhill force
+  // Scale by gravity to make it feel like natural rolling (heavier particles roll faster)
+  vec2 depthForce = -getDepthGradient(pos) * abs(effectiveGravity) * 5.0;
+
+  // Ground plane slope force: particles roll down the tilted ground plane
+  // Only apply when ground plane is enabled and particle is near the ground
+  vec2 groundForce = vec2(0.0);
+  if(u_groundPlaneEnabled > 0.5) {
+    float cosT = cos(u_groundTilt);
+    float sinT = sin(u_groundTilt);
+    // u_groundTilt is the angle from horizontal (0° = flat, 90° = vertical wall)
+    // Ground plane normal: (sinT, cosT) points upward/perpendicular to the plane
+    // Downhill direction (tangent): perpendicular to normal, rotated 90° clockwise
+    // From normal (sinT, cosT), tangent is (cosT, -sinT) pointing downhill
+    vec2 groundDownhill = vec2(cosT, -sinT);
+    // Simplified distance from particle to ground plane
+    // Uses Y-distance approximation instead of true perpendicular distance for performance
+    // This is acceptable because the downhill force direction is correct,
+    // and the proximity calculation only needs relative distance
+    float distToGround = pos.y - u_groundY;
+    // Apply force proportional to distance (stronger when closer)
+    // Only apply when particle is above and near the ground (within 0.3 units)
+    if(distToGround > 0.0 && distToGround < 0.3) {
+      float proximity = 1.0 - (distToGround / 0.3); // 1.0 at ground, 0.0 at distance 0.3
+      groundForce = groundDownhill * abs(effectiveGravity) * 3.0 * proximity;
+    }
+  }
+
   // Calculate intrinsic movement from pattern system
   vec2 patternForce = patternMovement(pos, v_uv.x, u_time);
 
   // Integrate velocity - mass affects inertia (heavier = slower acceleration)
   float inertiaFactor = 1.0 / max(tp.mass, 0.1);
-  vel += (g + aForce + windForce + f + j + patternForce) * u_dt * inertiaFactor;
+  vel += (g + aForce + windForce + f + j + depthForce + groundForce + patternForce) * u_dt * inertiaFactor;
 
   // ============ TYPE-SPECIFIC BEHAVIORS ============
   

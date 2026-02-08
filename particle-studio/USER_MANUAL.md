@@ -14,9 +14,11 @@ A comprehensive guide to using Particle Studio for creating stunning particle-ba
 8. [Appearance Settings](#appearance-settings)
 9. [Color Options](#color-options)
 10. [Masks](#masks)
-11. [Audio Reactivity](#audio-reactivity)
-12. [Exporting](#exporting)
-13. [Tips & Tricks](#tips--tricks)
+11. [Material System](#material-system)
+12. [Audio Reactivity](#audio-reactivity)
+13. [Boundary Modes](#boundary-modes)
+14. [Exporting](#exporting)
+15. [Tips & Tricks](#tips--tricks)
 
 ---
 
@@ -289,6 +291,60 @@ Draw on the mask to erase portions:
 2. Draw on the preview to remove mask areas
 3. Click "Done" when finished
 4. Click "Clear" to reset eraser
+
+---
+
+## Material System
+
+The Material System adds 2.5D/3D effects to particle simulations, creating depth and dimension.
+
+### Depth Field (2.5D)
+
+The Depth Field feature uses mask luminance to create a height map that particles can interact with.
+
+**How it works:**
+- Brighter areas in the mask = higher elevation
+- Darker areas = lower elevation  
+- Particles roll down slopes from bright to dark areas
+
+**Setup:**
+1. Create a mask layer with an uploaded image
+2. Open the "Material System" section in the right panel
+3. Enable "Depth Field (2.5D)"
+4. Adjust depth parameters:
+   - **Depth blur** (0-10): Smoothing passes for the height map
+   - **Depth curve** (0.1-3.0): Gamma curve for height mapping
+   - **Depth scale** (0-1): Height multiplier (strength of the effect)
+   - **Invert depth**: Flip high/low areas
+
+**Tips:**
+- Use images with gradual gradients for smooth slopes
+- Higher depth scale = steeper slopes
+- Combine with gravity for natural rolling behavior
+- Works best with collision or accumulate mask modes
+
+### Ground Plane
+
+The Ground Plane creates a tilted invisible surface that particles interact with.
+
+**Setup:**
+1. Open the "Ground Plane" section in the right panel
+2. Enable "Enable ground plane"
+3. Adjust parameters:
+   - **Tilt angle** (0-90°): Angle of the ground plane measured from horizontal (0° = flat/horizontal, 90° = vertical wall)
+   - **Y position** (0-1): Vertical position of the plane (0 = top of canvas, 1 = bottom)
+
+**How it works:**
+- Particles near the ground plane experience a downhill force
+- The force is stronger when closer to the plane (within 0.3 units)
+- Particles naturally roll downhill based on the tilt angle
+- Collisions use material properties for bounce and stickiness
+
+**Tips:**
+- Use with gravity to simulate particles rolling down a slope
+- Combine with depth field for complex terrain
+- Adjust boundary bounce for different surface behaviors
+- Higher tilt angles create steeper slopes
 
 ---
 
