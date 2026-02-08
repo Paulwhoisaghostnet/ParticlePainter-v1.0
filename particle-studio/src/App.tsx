@@ -177,7 +177,10 @@ export default function App() {
     // Wrap in async IIFE to allow await for audio track initialization
     (async () => {
       try {
-        if (resetOnStart) {
+        // Reset particles to time=0 if requested, but NOT if loop mode is enabled
+        // Loop mode needs continuous state for seamless wrapping
+        const { loopMode } = useStudioStore.getState().global;
+        if (resetOnStart && !loopMode) {
           engineRef.current?.resetAll();
         }
         
@@ -442,8 +445,10 @@ export default function App() {
 
     (async () => {
       try {
-        // Reset particles to time=0 if requested for proper loop export
-        if (resetOnStart) {
+        // Reset particles to time=0 if requested, but NOT if loop mode is enabled
+        // Loop mode needs continuous state for seamless wrapping
+        const { loopMode } = useStudioStore.getState().global;
+        if (resetOnStart && !loopMode) {
           engineRef.current?.resetAll();
         }
         
@@ -534,7 +539,10 @@ export default function App() {
       durationMs = (mp4Duration ?? 15) * 1000;
     }
 
-    if (recordingResetOnStart) {
+    // Reset particles to time=0 if requested, but NOT if loop mode is enabled
+    // Loop mode needs continuous state for seamless wrapping
+    const { loopMode } = useStudioStore.getState().global;
+    if (recordingResetOnStart && !loopMode) {
       engineRef.current?.resetAll();
     }
     
