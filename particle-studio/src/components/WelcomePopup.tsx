@@ -10,6 +10,11 @@ export function WelcomePopup() {
     setGlobal({ showWelcome: false });
   };
 
+  const handleOpenManual = () => {
+    // Open the manual in a new tab pointing to the GitHub blob
+    window.open("https://github.com/Paulwhoisaghostnet/ParticlePainter-v1.0/blob/main/particle-studio/USER_MANUAL.md", "_blank");
+  };
+
   return (
     <div className="modal-overlay" onClick={handleClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -75,28 +80,22 @@ export function WelcomePopup() {
 
           <div className="section">
             <h3 className="sectionTitle">Keyboard Shortcuts</h3>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              <div className="row" style={{ margin: 0 }}>
-                <span className="kbd">Space</span>
-                <span className="value">Pause / Resume</span>
-              </div>
-              <div className="row" style={{ margin: 0 }}>
-                <span className="kbd">R</span>
-                <span className="value">Reset Simulation</span>
-              </div>
-              <div className="row" style={{ margin: 0 }}>
-                <span className="kbd">H</span>
-                <span className="value">Show this Help</span>
-              </div>
+            <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "8px 16px", alignItems: "center" }}>
+              <span className="kbd">Space</span>
+              <span className="value">Pause / Resume</span>
+              
+              <span className="kbd">R</span>
+              <span className="value">Reset Simulation</span>
+              
+              <span className="kbd">H</span>
+              <span className="value">Show this Help</span>
             </div>
           </div>
 
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 24 }}>
             <button
               className="btn"
-              onClick={() => {
-                alert("Check out USER_MANUAL.md in the project files for comprehensive documentation!");
-              }}
+              onClick={handleOpenManual}
             >
               📖 Read Manual
             </button>

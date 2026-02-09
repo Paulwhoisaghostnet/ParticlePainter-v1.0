@@ -102,6 +102,7 @@ export function LeftPanel() {
             <button
               className="btn btnSm"
               style={{ flex: 1, opacity: layer ? 1 : 0.5, cursor: layer ? "pointer" : "not-allowed" }}
+              onClick={() => layer && exportLayerSettings(layer)}
             >
               📤 Export Settings
             </button>
