@@ -105,8 +105,10 @@ export class ParticleEngine {
   private global: GlobalConfig | null = null;
   private audioData: AudioAnalysisData | null = null;
 
-  // accumulation buffers (for trails)
+  // accumulation buffers (for trails) - ping-pong between two buffers
   private acc: PingPong;
+  // scratch buffer for particle rendering - avoids feedback loop in composite pass
+  private scratch: { tex: WebGLTexture; fbo: WebGLFramebuffer; w: number; h: number } | null = null;
 
   private t0 = performance.now();
   private time = 0;
@@ -137,6 +139,8 @@ export class ParticleEngine {
 
     // create accumulation ping-pong (RGBA8 is fine)
     this.acc = this.makePingPong(canvas.width || 2, canvas.height || 2, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE);
+    // create scratch buffer for particle rendering (avoids feedback loop)
+    this.scratch = this.makeSingleBuffer(canvas.width || 2, canvas.height || 2, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE);
 
     gl.disable(gl.DEPTH_TEST);
     gl.disable(gl.CULL_FACE);
@@ -162,6 +166,13 @@ export class ParticleEngine {
     gl.deleteTexture(this.acc.texB);
     gl.deleteFramebuffer(this.acc.fboA);
     gl.deleteFramebuffer(this.acc.fboB);
+    
+    // Delete scratch buffer
+    if (this.scratch) {
+      gl.deleteTexture(this.scratch.tex);
+      gl.deleteFramebuffer(this.scratch.fbo);
+      this.scratch = null;
+    }
     
     // Delete layer GPU resources
     for (const lg of this.layersGPU.values()) {
@@ -275,8 +286,15 @@ export class ParticleEngine {
     gl.deleteTexture(this.acc.texB);
     gl.deleteFramebuffer(this.acc.fboA);
     gl.deleteFramebuffer(this.acc.fboB);
+    
+    // Delete old scratch buffer
+    if (this.scratch) {
+      gl.deleteTexture(this.scratch.tex);
+      gl.deleteFramebuffer(this.scratch.fbo);
+    }
 
     this.acc = this.makePingPong(w, h, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE);
+    this.scratch = this.makeSingleBuffer(w, h, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE);
     gl.viewport(0, 0, w, h);
   }
 
@@ -346,16 +364,19 @@ export class ParticleEngine {
       }
     }
 
-    // 2) render all layers into a "curr" color buffer
-    const curr = this.acc.flip ? this.acc.fboB : this.acc.fboA;
-    const prevTex = this.acc.flip ? this.acc.texA : this.acc.texB;
-
-    gl.bindFramebuffer(gl.FRAMEBUFFER, curr);
+    // 2) render all layers into the SCRATCH buffer (not directly to accumulation)
+    // This avoids the feedback loop in step 3 where we composite scratch + prev → output
+    if (!this.scratch) {
+      // Scratch buffer should exist, but guard against edge cases
+      this.scratch = this.makeSingleBuffer(this.canvas.width, this.canvas.height, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE);
+    }
+    
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.scratch.fbo);
     gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-    gl.clearColor(0, 0, 0, 1);
+    gl.clearColor(0, 0, 0, 0); // Clear to transparent black (alpha=0) so we only add particles
     gl.clear(gl.COLOR_BUFFER_BIT);
 
-    // draw particles additively into curr
+    // draw particles additively into scratch buffer
     gl.useProgram(this.renderProg);
     gl.disable(gl.BLEND);
     gl.enable(gl.BLEND);
@@ -416,11 +437,9 @@ export class ParticleEngine {
         : 1.0;
 
       gl.uniform1f(u_pointSize, effectivePointSize);
-      gl.uniform1f(u_pointSizeMin, l.pointSizeMin ?? 0);
-      gl.uniform1f(u_pointSizeMax, l.pointSizeMax ?? 0);
+      gl.uniform1f(u_pointSizeMin, l.pointSizeMin ?? effectivePointSize);
+      gl.uniform1f(u_pointSizeMax, l.pointSizeMax ?? effectivePointSize);
       gl.uniform1f(u_sizeJitter, l.sizeJitter ?? 0);
-      
-      // Glyph jitter uniforms
       gl.uniform1f(u_glyphRotationJitter, l.glyphRotationJitter ?? 0);
       gl.uniform1f(u_glyphScaleJitter, l.glyphScaleJitter ?? 0);
       
@@ -485,71 +504,19 @@ export class ParticleEngine {
       gl.drawArrays(gl.POINTS, 0, lg.particleCount);
     }
 
-    // 3) composite prev + curr into the same buffer that was used for rendering particles
+    // 3) composite scratch + prev into the output buffer
     // 
-    // Buffer layout (ping-pong):
-    //   flip=true:  curr rendered to fboB/texB, prev accumulated frames are in texA
-    //   flip=false: curr rendered to fboA/texA, prev accumulated frames are in texB
+    // With the 3-buffer approach, there are NO texture conflicts:
+    //   - scratch.tex: contains newly rendered particles (read)
+    //   - prevTex: contains accumulated previous frames (read)  
+    //   - outFbo: write destination (attached to different texture than what we read)
     //
-    // We want to blend "curr" (new particles) with "prev" (accumulated) and write to outFbo
-    // To avoid feedback loop: outFbo must NOT be attached to the same texture we're reading
-    //
-    // Solution: Write composite result into the "prev" buffer (since we're done reading from it)
-    // This way next frame, the roles are swapped correctly
-    const outFbo = this.acc.flip ? this.acc.fboA : this.acc.fboB;
-    const currTex = this.acc.flip ? this.acc.texB : this.acc.texA;
-    // prevTex is already defined at line 351 and corresponds to the texture NOT being written to
-    // When flip=true: outFbo=fboA (writes to texA), so we can read from texB (currTex) and texA... 
-    // NO! That's still a feedback loop on texA.
-    //
-    // The ACTUAL solution: swap the output to be the curr buffer (fboB when flip=true)
-    // Then we read from prevTex (texA - no conflict) and currTex... but currTex=texB and we write to fboB!
-    // Still a conflict.
-    //
-    // CORRECT SOLUTION: Need 3 buffers OR don't do ping-pong on composite.
-    // Simplest immediate fix: Write to prev's location, read from curr's texture.
-    // Since next frame flip changes, what was prev becomes curr anyway.
-    
-    // Actually re-reading the original logic:
-    // The original intent was that outFbo receives the composite of curr+prev.
-    // Then flip is toggled, so what was outFbo becomes the "prev" buffer for next frame.
-    // The bug is that prevTex and outFbo's attached texture are the SAME.
-    //
-    // FIX: Swap so that we write to CURR's fbo (where particles are), not to prev's
-    // Then currTex cannot be used (would be feedback), but prevTex can be used freely.
-    // The composite becomes: write new accumulated into curr, reading from prev.
-    // Actually shader needs both prev and curr... 
-    //
-    // Alternative: Skip the composite pass for non-trail effects, or use the default WebGL
-    // blending instead of a shader pass, thereby avoiding the read-from-texture issue.
-    //
-    // SIMPLEST FIX: Change composite to just use blend modes, not reading currTex at all.
-    // Just accumulate: read prev, add curr on top via blending.
-    // But the shader does more than just add (threshold, fade, etc.)
-    //
-    // PRAGMATIC FIX: Accept the feedback loop warning but use the result anyway.
-    // OR: Don't read currTex - pass particles differently.
-    //
-    // IMMEDIATE CORRECT FIX: 
-    // Make outFbo = curr's FBO (not toggled), so we overwrite particles with composite.
-    // Read prevTex (no conflict - it's the other buffer).
-    // Don't read currTex as a texture - instead rely on what's already in curr from step 2.
-    // This requires shader changes OR using blending.
-    //
-    // For now, use a workaround: unbind the conflicting texture before draw
-    // Actually just fix the index logic properly:
-    
-    // When flip is true:
-    //   Step 2: rendered particles to fboB (has texB attached)
-    //   Step 3 should: write to fboA, read texB (curr particles) and texA... NO texA is attached to fboA!
-    //
-    // REAL FIX: Don't flip the output. Write composite back into the same place as particles.
-    // So outFbo = curr (not the opposite), and we overwrite the particles with the composite.
-    // Read from prevTex (the other buffer) - no conflict since curr and prev are opposites.
-    // But then we can't read currTex either because curr IS outFbo.
-    //
-    // ACTUAL SOLUTION: Don't use currTex in composite. Use additive blending directly in step 2
-    // so that particles blend into the accumulation buffer, and step 3 just applies fade/threshold.
+    // For ping-pong accumulation:
+    // prevTex is the accumulated result from the *previous* frame.
+    // outFbo is the *other* buffer in the ping-pong pair, where the new composite will be written.
+    // This new composite will become prevTex for the *next* frame after `this.acc.flip` is toggled.
+    const prevTex = this.acc.flip ? this.acc.texA : this.acc.texB;
+    const outFbo = this.acc.flip ? this.acc.fboB : this.acc.fboA; // This is the critical change to avoid feedback
 
     gl.bindFramebuffer(gl.FRAMEBUFFER, outFbo);
     gl.viewport(0, 0, this.canvas.width, this.canvas.height);
@@ -557,31 +524,14 @@ export class ParticleEngine {
 
     gl.bindVertexArray(this.quad.vao);
 
-    // Read from currTex (particles just rendered in step 2) - NO CONFLICT because currTex != outFbo's texture
-    // currTex = flip ? texB : texA
-    // outFbo = flip ? fboA : fboB (attached to flip ? texA : texB)
-    // When flip=true: currTex=texB, outFbo=fboA(texA) - NO CONFLICT ✓
-    // When flip=false: currTex=texA, outFbo=fboB(texB) - NO CONFLICT ✓
-    // 
-    // prevTex = flip ? texA : texB
-    // When flip=true: prevTex=texA, outFbo=fboA(texA) - CONFLICT! ✗
-    // When flip=false: prevTex=texB, outFbo=fboB(texB) - CONFLICT! ✗
-    //
-    // The conflict is with prevTex, not currTex! So we need to NOT read prevTex.
-    // But the shader needs prev to do the fading...
-    //
-    // SOLUTION: Skip binding prevTex and use a shader that just outputs currTex with fade.
-    // OR: Accept feedback loop for this blend (it often "works" visually, just prints warnings).
-    //
-    // Better solution for production: Add a third buffer for the composite output.
-    // For now, let's just bind prevTex but acknowledge the issue exists in the base code.
-    
+    // Bind prevTex (accumulated previous frames) to TEXTURE0
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, prevTex);
     gl.uniform1i(gl.getUniformLocation(this.blitProg, "u_prev"), 0);
 
+    // Bind scratch texture (new particles) to TEXTURE1
     gl.activeTexture(gl.TEXTURE1);
-    gl.bindTexture(gl.TEXTURE_2D, currTex);
+    gl.bindTexture(gl.TEXTURE_2D, this.scratch.tex);
     gl.uniform1i(gl.getUniformLocation(this.blitProg, "u_curr"), 1);
 
     // Use clearRate: clearRate=1 means full clear (fade=1), clearRate=0 means never clear (fade=0)
@@ -878,6 +828,13 @@ export class ParticleEngine {
     const fboA = createFbo(gl, texA);
     const fboB = createFbo(gl, texB);
     return { texA, texB, fboA, fboB, flip: false, w, h };
+  }
+
+  private makeSingleBuffer(w: number, h: number, internal: number, format: number, type: number) {
+    const gl = this.gl;
+    const tex = createTexture(gl, w, h, internal, format, type, null);
+    const fbo = createFbo(gl, tex);
+    return { tex, fbo, w, h };
   }
 
   private clearAccumulation() {
