@@ -51,6 +51,10 @@ export default function App() {
     engine.resize(resolution.width, resolution.height);
 
     const onKey = (e: KeyboardEvent) => {
+      // Skip shortcuts when typing in form elements
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+
       if (e.key.toLowerCase() === " ") {
         useStudioStore.getState().togglePause();
       }
