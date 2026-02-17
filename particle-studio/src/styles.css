@@ -795,8 +795,64 @@ canvas {
   border-right: 1px solid var(--stroke);
 }
 
-.segmented button:hover {
-  background: rgba(255, 255, 255, 0.05);
+/* ============================================
+   RESPONSIVE (MOBILE)
+   ============================================ */
+.mobileHeader {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--stroke);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  height: 60px;
+}
+
+@media (max-width: 800px) {
+  .app {
+    flex-direction: column;
+    padding: 0; /* Remove padding for edge-to-edge on mobile */
+    position: relative;
+    padding-top: 60px; /* Space for header */
+  }
+
+  .mobileHeader {
+    display: flex;
+  }
+
+  .canvasArea {
+    padding: 12px;
+    height: 100%;
+    width: 100%;
+  }
+
+  .rightPanel {
+    position: fixed;
+    top: 60px; /* Below header */
+    right: 0;
+    bottom: 0;
+    width: 320px;
+    max-width: 85vw;
+    z-index: 100;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+    background: var(--panel); /* Solid background */
+    border-radius: 0; /* Remove radius for edge look */
+    border-left: 1px solid var(--stroke);
+    border-top: none;
+    border-bottom: none;
+    border-right: none;
+  }
+
+  .rightPanel.open {
+    transform: translateX(0);
+  }
 }
 
 .segmented button.active {

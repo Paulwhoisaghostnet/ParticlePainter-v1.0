@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { StudioPanel } from "./components/StudioPanel";
 import { ExportBar } from "./components/ExportBar";
 import { WelcomePopup } from "./components/WelcomePopup";
@@ -15,14 +15,34 @@ export default function App() {
   // Initialize Recorder
   useRecorder(canvasRef, engineRef, isInitialized);
 
+  const [showDrawer, setShowDrawer] = useState(false);
+
+  // Close drawer when clicking outside (on canvas)
+  const handleCanvasClick = () => {
+    if (showDrawer) setShowDrawer(false);
+  };
+
   return (
     <div className="app">
       {/* Welcome popup on first load */}
       <WelcomePopup />
       <HotkeyOverlay />
       
+      {/* Mobile Header / Toggle */}
+      <div className="mobileHeader">
+        <div className="brand">
+          <h1>Particle Painter</h1>
+        </div>
+        <button 
+          className="btn btnIcon" 
+          onClick={() => setShowDrawer(!showDrawer)}
+        >
+          {showDrawer ? "✕" : "☰"}
+        </button>
+      </div>
+      
       {/* Center - Canvas Area */}
-      <div className="canvasArea">
+      <div className="canvasArea" onClick={handleCanvasClick}>
         <div className="canvasWrap">
           <canvas ref={canvasRef} />
         </div>
@@ -31,7 +51,10 @@ export default function App() {
       </div>
 
       {/* Right - Unified Studio Panel */}
-      <StudioPanel />
+      <StudioPanel 
+        className={showDrawer ? "open" : ""} 
+        onClose={() => setShowDrawer(false)}
+      />
     </div>
   );
 }

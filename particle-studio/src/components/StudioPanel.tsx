@@ -11,7 +11,12 @@ const IconPlay = () => <span>▶</span>;
 const IconPause = () => <span>⏸</span>;
 const IconReset = () => <span>↺</span>;
 
-export const StudioPanel: React.FC = () => {
+interface StudioPanelProps {
+  className?: string;
+  onClose?: () => void;
+}
+
+export const StudioPanel: React.FC<StudioPanelProps> = ({ className = "", onClose }) => {
   // ... state setup remains the same
   const global = useStudioStore((s) => s.global);
   const setGlobal = useStudioStore((s) => s.setGlobal);
@@ -35,7 +40,7 @@ export const StudioPanel: React.FC = () => {
   };
 
   return (
-    <div className="panel rightPanel" style={{ gridRow: '1 / 3', height: '100%' }}>
+    <div className={`panel rightPanel ${className}`} style={{ gridRow: '1 / 3', height: '100%' }}>
       {/* Studio Header - Always Visible */}
       <div className="panelHeader">
         <div className="brand">
