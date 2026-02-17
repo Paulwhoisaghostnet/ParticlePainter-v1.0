@@ -33,6 +33,27 @@ const colorSchemes: { value: ColorScheme; label: string; colors: string[] }[] = 
   { value: "mono", label: "Mono", colors: ["#ffffff", "#888888", "#333333"] }
 ];
 
+const movementPatternOptions: { value: string; label: string }[] = [
+  { value: "still", label: "Still" },
+  { value: "linear", label: "Linear" },
+  { value: "spiral", label: "Spiral" },
+  { value: "orbit", label: "Orbit" },
+  { value: "radialOut", label: "Radial Out" },
+  { value: "radialIn", label: "Radial In" },
+  { value: "wave", label: "Wave" },
+  { value: "figure8", label: "Figure 8" },
+  { value: "brownian", label: "Brownian" },
+  { value: "followCurl", label: "Follow Curl" },
+  { value: "vortex", label: "Vortex" }
+];
+
+const maskModeOptions: { value: string; label: string }[] = [
+  { value: "ignore", label: "Ignore" },
+  { value: "visibility", label: "Visibility" },
+  { value: "collision", label: "Collision" },
+  { value: "accumulate", label: "Accumulate" }
+];
+
 // Collapsible section component for saving UI space
 function CollapsibleSection({ 
   title, 
@@ -360,6 +381,118 @@ export function RightPanel() {
               />
             </CollapsibleSection>
 
+            <div className="hr" />
+
+            {/* Physics & Movement */}
+            <CollapsibleSection title="Physics & Movement" defaultOpen={false}>
+              <div className="row">
+                <span className="rowLabel">Pattern</span>
+                <select
+                  value={layer.movementConfig?.pattern ?? "still"}
+                  onChange={(e) =>
+                    setLayer(layer.id, {
+                       movementConfig: {
+                         ...layer.movementConfig,
+                         pattern: e.target.value as any
+                       }
+                    })
+                  }
+                >
+                  {movementPatternOptions.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <SliderRow
+                label="Speed"
+                value={layer.speed ?? 1.0}
+                min={0}
+                max={5}
+                step={0.1}
+                onChange={(v) => setLayer(layer.id, { speed: v })}
+              />
+
+              <SliderRow
+                label="Gravity"
+                value={layer.gravity ?? 0}
+                min={-0.5}
+                max={0.5}
+                step={0.01}
+                onChange={(v) => setLayer(layer.id, { gravity: v })}
+              />
+              
+              <SliderRow
+                label="Wind Angle"
+                value={layer.windAngle ?? 0}
+                min={0}
+                max={360}
+                step={1}
+                onChange={(v) => setLayer(layer.id, { windAngle: v })}
+              />
+
+              <SliderRow
+                label="Wind Strength"
+                value={layer.windStrength ?? 0}
+                min={0}
+                max={2}
+                step={0.01}
+                onChange={(v) => setLayer(layer.id, { windStrength: v })}
+              />
+              
+              <SliderRow
+                label="Drag"
+                value={layer.drag ?? 0}
+                min={0}
+                max={1}
+                step={0.01}
+                onChange={(v) => setLayer(layer.id, { drag: v })}
+              />
+              
+               <SliderRow
+                label="Curl Noise"
+                value={layer.curl ?? 0}
+                min={0}
+                max={2}
+                step={0.01}
+                onChange={(v) => setLayer(layer.id, { curl: v })}
+              />
+            </CollapsibleSection>
+
+            <div className="hr" />
+            
+            {/* Mask Interaction */}
+            <CollapsibleSection title="Mask Interaction" defaultOpen={false}>
+               <div className="row">
+                <span className="rowLabel">Mode</span>
+                <select
+                  value={layer.maskMode ?? "ignore"}
+                  onChange={(e) => setLayer(layer.id, { maskMode: e.target.value as any })}
+                >
+                  {maskModeOptions.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="small" style={{ marginBottom: 8, opacity: 0.7 }}>
+                {layer.maskMode === "ignore" && "Particles ignore the mask entirely."}
+                {layer.maskMode === "visibility" && "Particles are hidden outside the mask."}
+                {layer.maskMode === "collision" && "Particles bounce off mask boundaries."}
+                {layer.maskMode === "accumulate" && "Particles stick to mask boundaries."}
+              </div>
+              
+              {layer.maskMode === "collision" && (
+                 <SliderRow
+                    label="Bounce"
+                    value={layer.boundaryBounce ?? 0.5}
+                    min={0}
+                    max={1.5}
+                    step={0.01}
+                    onChange={(v) => setLayer(layer.id, { boundaryBounce: v })}
+                 />
+              )}
+            </CollapsibleSection>
+            
             <div className="hr" />
 
             {/* Color section */}

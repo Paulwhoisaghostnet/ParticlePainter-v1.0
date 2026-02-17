@@ -61,7 +61,20 @@ export function SliderRow(props: {
         </Slider.Root>
       </div>
 
-      <div className="value">{value.toFixed(3)}</div>
+      <input
+        type="number"
+        className="input inputSm"
+        style={{ width: 60, textAlign: 'right', fontFamily: 'monospace' }}
+        value={parseFloat(value.toFixed(3))}
+        step={step}
+        min={min}
+        max={max}
+        onChange={(e) => {
+          const val = parseFloat(e.target.value);
+          if (!isNaN(val)) onChange(val);
+        }}
+        onKeyDown={(e) => e.stopPropagation()} // Prevent triggering global shortcuts
+      />
     </div>
   );
 }

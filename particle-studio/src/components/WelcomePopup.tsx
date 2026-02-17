@@ -1,4 +1,5 @@
 import { useStudioStore } from "../state/store";
+import { KeyboardKey } from "./ui/KeyboardKey";
 
 export function WelcomePopup() {
   const global = useStudioStore((s) => s.global);
@@ -81,14 +82,17 @@ export function WelcomePopup() {
           <div className="section">
             <h3 className="sectionTitle">Keyboard Shortcuts</h3>
             <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "8px 16px", alignItems: "center" }}>
-              <span className="kbd">Space</span>
+              <KeyboardKey label="Space" />
               <span className="value">Pause / Resume</span>
               
-              <span className="kbd">R</span>
+              <KeyboardKey label="R" />
               <span className="value">Reset Simulation</span>
               
-              <span className="kbd">H</span>
+              <KeyboardKey label="H" />
               <span className="value">Show this Help</span>
+              
+              <KeyboardKey label="?" />
+              <span className="value">Show All Shortcuts</span>
             </div>
           </div>
 

@@ -10,6 +10,7 @@ import { MaskEraser } from "./MaskEraser";
 import { FlowPathEditor } from "./FlowPathEditor";
 import { AttractionPointsEditor } from "./AttractionPointsEditor";
 import { exportLayerSettings, importLayerSettings } from "../engine/LayerExporter";
+import { KeyboardKey } from "./ui/KeyboardKey";
 
 const typeOptions: { value: ParticleType; label: string; desc: string }[] = [
   { value: "sand", label: "Sand", desc: "Heavy, resists wind, clings to surfaces" },
@@ -66,9 +67,8 @@ export function LeftPanel() {
           <span>GPU • layers • masks</span>
         </div>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          <span className="kbd">Space</span>
-          <span className="kbd">R</span>
-          <span className="kbd">H</span>
+          <KeyboardKey label="Space" size="sm" />
+          <KeyboardKey label="?" size="sm" />
         </div>
       </div>
 

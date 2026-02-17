@@ -5,45 +5,12 @@ import type {
   ColorRegionEffect, AttractionPoint, BoundaryMode, WaveCardinalDirection, ResolutionPreset
 } from "./types";
 
-// Default material presets
-const defaultMaterialPresets: MaterialPreset[] = [
-  {
-    id: "solid",
-    name: "Solid",
-    response: { deflect: 0.8, stick: 0.1, passThrough: 0, fragment: 0.2, depositSmear: 0.1, depositRipple: 0, depositDent: 0, glow: 0 },
-    fragmentCount: 3,
-    fragmentLifespan: 0.3,
-    decayRate: 0.5,
-    color: "#ffffff"
-  },
-  {
-    id: "liquid",
-    name: "Liquid",
-    response: { deflect: 0.2, stick: 0.3, passThrough: 0, fragment: 0.1, depositSmear: 0.6, depositRipple: 0.8, depositDent: 0, glow: 0 },
-    fragmentCount: 5,
-    fragmentLifespan: 0.5,
-    decayRate: 0.3,
-    color: "#4488ff"
-  },
-  {
-    id: "gel",
-    name: "Gel/Sticky",
-    response: { deflect: 0.1, stick: 0.9, passThrough: 0, fragment: 0, depositSmear: 0.8, depositRipple: 0.1, depositDent: 0.2, glow: 0 },
-    fragmentCount: 0,
-    fragmentLifespan: 0,
-    decayRate: 0.1,
-    color: "#ff4444"
-  },
-  {
-    id: "porous",
-    name: "Porous/Gas",
-    response: { deflect: 0.1, stick: 0, passThrough: 0.7, fragment: 0, depositSmear: 0, depositRipple: 0, depositDent: 0, glow: 0 },
-    fragmentCount: 0,
-    fragmentLifespan: 0,
-    decayRate: 0.8,
-    color: "#000000"
-  }
-];
+// START MONKEY PATCH
+// We need to extend GlobalConfig interface here because we can't easily modify the types file right now 
+// (it might be shared or I want to avoid touching it if possible, but actually I should probably check types.ts)
+// For now, I will modify types.ts in a separate step to be clean.
+// Actually, I'll check types.ts first.
+
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -54,185 +21,118 @@ const DEFAULT_SHAPE: ParticleShape = "dot";
 // Default point size is 10 for all particle types (easy to see individual particles)
 const DEFAULT_POINT_SIZE = 10;
 
-// Default mask transform
-const defaultMaskTransform = (): MaskTransform => ({
-  x: 0,
-  y: 0,
-  scale: 1,
-  rotation: 0,
-  skewX: 0,
-  skewY: 0
-});
+import { 
+  PARTICLE_PRESETS, defaultMaterialPresets, defaultSpawnConfig, 
+  defaultMovementConfig, defaultMaskTransform, defaultBorderEffectConfig 
+} from "./presets";
 
-// Default spawn config based on particle type
-const defaultSpawnConfig = (type: ParticleType): SpawnConfig => {
-  // Rain-like particles (sand, liquid) spawn from top
-  // Rising particles (sparks) spawn from bottom
-  // Everything else spawns randomly
-  const region = type === "sand" || type === "liquid" ? "topEdge" 
-               : type === "sparks" ? "bottomEdge" 
-               : "random";
-  
+const defaultLayer = (name: string, type: ParticleType, particleCount: number, kind: LayerKind = "foreground"): LayerConfig => {
+  const preset = PARTICLE_PRESETS[type] ?? PARTICLE_PRESETS.crumbs ?? {};
+
   return {
-    region,
-    edgeOffset: 0.05,           // Slightly off edge
-    edgeSpread: 1.0,            // Full spread across edge
-    centerPoint: { x: 0.5, y: 0.5 },
-    burstSpeed: 0.3,
-    customMask: undefined
+    id: uid(),
+    name,
+    kind,
+    enabled: true,
+    particleCount,
+    type,
+    shape: DEFAULT_SHAPE,
+    
+    // Explicitly merge preset values with defaults to satisfy TS
+    spawnRate: preset.spawnRate ?? 0.0,
+    spawnSpeed: preset.spawnSpeed ?? 0.5,
+    gravity: preset.gravity ?? 0.0,
+    drag: preset.drag ?? 0.0,
+    jitter: preset.jitter ?? 0.0,
+    curl: preset.curl ?? 0.0,
+    attract: preset.attract ?? 0.0,
+    attractPoint: preset.attractPoint ?? { x: 0.5, y: 0.5 },
+    windAngle: preset.windAngle ?? 0,
+    windStrength: preset.windStrength ?? 0.0,
+    speed: preset.speed ?? 1.0,
+    boundaryMode: preset.boundaryMode ?? "bounce",
+    boundaryBounce: preset.boundaryBounce ?? 0.4,
+    accumulationRate: preset.accumulationRate ?? 0.3,
+    accumulationTime: preset.accumulationTime ?? 2.0,
+    decayRate: preset.decayRate ?? 0.1,
+    color: preset.color ?? "#ffffff",
+    brightness: preset.brightness ?? 1.0,
+
+    // === SPAWN REGION SYSTEM ===
+    spawnConfig: defaultSpawnConfig(type),
+    
+    // === MOVEMENT PATTERN SYSTEM ===
+    movementConfig: defaultMovementConfig(type),
+    
+    // mask settings
+    maskUrl: undefined,
+    maskInvert: true,
+    maskThreshold: 0.5,
+    maskTransform: defaultMaskTransform(),
+    maskEraseMask: undefined,
+    maskMode: "collision",
+    
+    // === NEW MASK BEHAVIOR SYSTEM ===
+    maskBehavior: "containment",
+    borderEffectConfig: defaultBorderEffectConfig(),
+    colorRegions: [] as ColorRegionEffect[],
+    
+    maskStickiness: 0.3,
+    maskMagnetism: 0,
+    maskMagnetismRadius: 0.1,
+    showMask: false,
+    
+    // flow paths
+    flowPaths: [],
+    
+    // Defaults for fields not in all presets
+    attractFalloff: 1.0,
+    attractionPoints: [],
+    massJitter: 0,
+    pointSize: DEFAULT_POINT_SIZE,
+    pointSizeMin: 0,
+    pointSizeMax: 0,
+    sizeJitter: 0,
+    brightnessJitter: 0,
+    dither: 0,
+    trailLength: 0,
+    colorJitter: 0,
+    colorMode: "single",
+    colorSecondary: undefined,
+    colorTertiary: undefined,
+    colorScheme: undefined,
+    colorRangeStart: undefined,
+    colorRangeEnd: undefined,
+    
+    // === MATERIAL SYSTEM ===
+    depthEnabled: false,
+    depthFromMask: true,
+    depthBlur: 3,
+    depthCurve: 1.0,
+    depthInvert: false,
+    depthScale: 0.5,
+
+    groundPlaneEnabled: false,
+    groundPlaneTilt: 30,
+    groundPlaneY: 0.8,
+
+    surfaceFieldsEnabled: false,
+    smearFieldEnabled: false,
+    smearDecayRate: 0.3,
+    rippleFieldEnabled: false,
+    rippleDamping: 0.05,
+    rippleSpeed: 1.0,
+    dentFieldEnabled: false,
+    dentRecoveryRate: 0.02,
+
+    materialMode: "binary",
+    materialPalette: [...defaultMaterialPresets],
+
+    glyphPalette: [{ shape: DEFAULT_SHAPE, weight: 1.0 }] as GlyphPaletteEntry[],
+    glyphRotationJitter: 0,
+    glyphScaleJitter: 0
   };
 };
-
-// Default movement config based on particle type
-const defaultMovementConfig = (type: ParticleType): MovementConfig => ({
-  // Most particles are still by default - forces drive movement
-  pattern: type === "ink" ? "followCurl" : type === "dust" ? "brownian" : "still",
-  direction: 270,              // Default direction: down (for linear)
-  speed: 0.1,                  // Low intrinsic speed
-  centerPoint: { x: 0.5, y: 0.5 },
-  spiralTightness: 0.3,
-  orbitRadius: 0.3,
-  orbitEccentricity: 0,
-  waveAmplitude: 0.1,
-  waveFrequency: 2,
-  waveDirection: 0,
-  waveCardinalDirection: "east" as WaveCardinalDirection,
-  vortexStrength: 0.5,
-  vortexInward: 0.2,
-  // Evade parameters
-  evadeStrength: 0.3,
-  evadeRadius: 0.1,
-  // Cluster parameters
-  clusterStrength: 0.5,
-  clusterBreakThreshold: 0.7,
-  clusterBySize: false,
-  clusterByColor: false,
-  clusterByBrightness: false
-});
-
-// Default border effect config
-const defaultBorderEffectConfig = (): BorderEffectConfig => ({
-  effect: "deflect",
-  strength: 0.5,
-  transformColor: "#ffffff",
-  fragmentCount: 3,
-  smearLength: 0.3,
-  velocityScale: 1.0
-});
-
-const defaultLayer = (name: string, type: ParticleType, particleCount: number, kind: LayerKind = "foreground"): LayerConfig => ({
-  id: uid(),
-  name,
-  kind,
-  enabled: true,
-  particleCount,
-  spawnRate: type === "sand" ? 0.15 : 0.0,
-  spawnSpeed: type === "sand" ? 0.4 : type === "sparks" ? 1.5 : type === "ink" ? 0.6 : 0.8,
-  type,
-  shape: DEFAULT_SHAPE, // Always "dot" by default - user changes via UI
-  
-  // === SPAWN REGION SYSTEM ===
-  spawnConfig: defaultSpawnConfig(type),
-  
-  // === MOVEMENT PATTERN SYSTEM ===
-  movementConfig: defaultMovementConfig(type),
-  
-  // mask settings
-  maskUrl: undefined,
-  maskInvert: true,
-  maskThreshold: 0.5,
-  maskTransform: defaultMaskTransform(),
-  maskEraseMask: undefined,
-  maskMode: "collision",
-  
-  // === NEW MASK BEHAVIOR SYSTEM ===
-  maskBehavior: "containment",
-  borderEffectConfig: defaultBorderEffectConfig(),
-  colorRegions: [] as ColorRegionEffect[],
-  
-  maskStickiness: 0.3,
-  maskMagnetism: 0,
-  maskMagnetismRadius: 0.1,
-  showMask: false, // Don't show mask overlay by default
-  
-  // flow paths (for directed flow layers)
-  flowPaths: [],
-  
-  // Distinct physics per type (tighter, more usable ranges)
-  gravity: type === "sparks" ? -0.15 : type === "sand" ? 0.4 : type === "dust" ? 0.02 : 0.08,
-  drag: type === "sand" ? 0.03 : type === "sparks" ? 0.12 : type === "ink" ? 0.06 : 0.04,
-  jitter: type === "sparks" ? 0.6 : type === "ink" ? 0.1 : type === "dust" ? 0.2 : 0.08,
-  curl: type === "ink" ? 0.7 : type === "dust" ? 0.4 : type === "sparks" ? 0.15 : 0.1,
-  attract: type === "sand" ? 0.0 : type === "ink" ? 0.1 : 0.05,
-  attractFalloff: 1.0, // linear falloff by default
-  attractPoint: { x: 0.5, y: 0.5 },
-  attractionPoints: [] as AttractionPoint[], // Multiple attraction points (empty by default)
-  windAngle: type === "sand" ? 270 : type === "sparks" ? 90 : 0, // sand falls down, sparks rise
-  windStrength: 0.0, // off by default
-  speed: type === "sparks" ? 1.2 : type === "sand" ? 0.9 : 1.0,
-  massJitter: 0, // No mass jitter by default
-  boundaryMode: "bounce" as BoundaryMode,
-  boundaryBounce: type === "sand" ? 0.2 : type === "sparks" ? 0.6 : 0.4,
-  
-  // render
-  pointSize: DEFAULT_POINT_SIZE, // 10 by default for visibility
-  pointSizeMin: 0, // offset from base size (0 to -6)
-  pointSizeMax: 0, // offset from base size (0 to +6)
-  sizeJitter: 0, // 0 by default per user request (now 0..2 range)
-  brightness: type === "sparks" ? 1.4 : 1.0,
-  brightnessJitter: 0, // No brightness jitter by default (0..2 range)
-  dither: 0, // 0 by default per user request
-  trailLength: 0, // 0 by default per user request
-  colorJitter: 0, // No color jitter by default
-  
-  // color options
-  colorMode: "single",
-  color: type === "sparks" ? "#ffcc44" : type === "ink" ? "#4488ff" : type === "liquid" ? "#4488ff" : "#ffffff",
-  colorSecondary: undefined,
-  colorTertiary: undefined,
-  colorScheme: undefined,
-  colorRangeStart: undefined,
-  colorRangeEnd: undefined,
-  
-  // particle lifecycle
-  accumulationRate: type === "sand" ? 0.8 : type === "liquid" ? 0.6 : 0.3,
-  accumulationTime: type === "sparks" ? 0.5 : type === "liquid" ? 3.0 : 2.0,
-  decayRate: type === "sparks" ? 0.8 : type === "dust" ? 0.4 : type === "liquid" ? 0.1 : 0.3,
-
-  // === MATERIAL SYSTEM ===
-  
-  // Depth field (2.5D) - disabled by default
-  depthEnabled: false,
-  depthFromMask: true,
-  depthBlur: 3,
-  depthCurve: 1.0,
-  depthInvert: false,
-  depthScale: 0.5,
-
-  // Ground plane - disabled by default
-  groundPlaneEnabled: false,
-  groundPlaneTilt: 30,
-  groundPlaneY: 0.8,
-
-  // Surface field buffers - disabled by default per user request
-  surfaceFieldsEnabled: false,
-  smearFieldEnabled: false,
-  smearDecayRate: 0.3,
-  rippleFieldEnabled: false,
-  rippleDamping: 0.05,
-  rippleSpeed: 1.0,
-  dentFieldEnabled: false,
-  dentRecoveryRate: 0.02,
-
-  // Material mode
-  materialMode: "binary",
-  materialPalette: [...defaultMaterialPresets],
-
-  // Glyph/shape jitter - all 0 by default per user request
-  glyphPalette: [{ shape: DEFAULT_SHAPE, weight: 1.0 }] as GlyphPaletteEntry[],
-  glyphRotationJitter: 0,
-  glyphScaleJitter: 0
-});
 
 // Helper function to get current resolution dimensions based on global config
 export function getResolutionDimensions(global: GlobalConfig): { width: number; height: number } {
@@ -257,6 +157,7 @@ export function getResolutionDimensions(global: GlobalConfig): { width: number; 
 type StudioState = {
   global: GlobalConfig;
   layers: LayerConfig[];
+  toggleHotkeys: () => void;
   selectedLayerId: string;
 
   resetNonce: number;
@@ -280,6 +181,7 @@ type StudioState = {
 
   addLayer: (kind?: LayerKind, particleType?: ParticleType) => void;
   importLayer: (settings: Omit<LayerConfig, "id">) => void;
+  duplicateLayer: (id: string) => void;
   removeLayer: (id: string) => void;
   selectLayer: (id: string) => void;
   setLayer: (id: string, patch: Partial<LayerConfig>) => void;
@@ -311,7 +213,7 @@ export const useStudioStore = create<StudioState>((set, get) => ({
     exposure: 1,
     backgroundFade: 0.08, // DEPRECATED, use clearRate
     clearRate: 1.0, // Default: full clear each frame (opposite of backgroundFade behavior)
-    monochrome: true,
+    monochrome: false,
     invert: false,
     threshold: 0.2,
     thresholdSoft: 0.08,
@@ -337,7 +239,10 @@ export const useStudioStore = create<StudioState>((set, get) => ({
     bufferDuration: 5,
     bufferFps: 24,
     // Welcome popup
-    showWelcome: true // Show welcome popup on first load
+    showWelcome: true, // Show welcome popup on first load
+    
+    // Hotkey Overlay
+    showHotkeys: false
   },
   layers: [],
   selectedLayerId: "",
@@ -378,6 +283,17 @@ export const useStudioStore = create<StudioState>((set, get) => ({
       ...settings,
       // Append "(imported)" to name to indicate it was imported
       name: `${settings.name} (imported)`,
+    };
+    set((s) => ({ layers: [newLayer, ...s.layers], selectedLayerId: newLayer.id }));
+  },
+
+  duplicateLayer: (id: string) => {
+    const layer = get().layers.find((l) => l.id === id);
+    if (!layer) return;
+    const newLayer = { 
+      ...layer, 
+      id: uid(), 
+      name: `${layer.name} Copy` 
     };
     set((s) => ({ layers: [newLayer, ...s.layers], selectedLayerId: newLayer.id }));
   },
@@ -451,7 +367,9 @@ export const useStudioStore = create<StudioState>((set, get) => ({
     set({ walletConnected: connected, walletAddress: address, walletBalance: balance }),
 
   disconnectWallet: () =>
-    set({ walletConnected: false, walletAddress: null, walletBalance: 0 })
+    set({ walletConnected: false, walletAddress: null, walletBalance: 0 }),
+    
+  toggleHotkeys: () => set((s) => ({ global: { ...s.global, showHotkeys: !s.global.showHotkeys } }))
 }));
 
 // initialize selected layer id on first import

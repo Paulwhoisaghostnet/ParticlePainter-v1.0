@@ -415,5 +415,8 @@ export type GlobalConfig = {
   bufferDuration: number; // seconds (2-10)
   bufferFps: number; // frames per second (15-30)
   // Welcome popup
-  showWelcome: boolean; // Show welcome popup on first load
+  showWelcome: boolean;
+  
+  // Hotkey Overlay
+  showHotkeys: boolean;
 };

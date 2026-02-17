@@ -1,0 +1,49 @@
+{
+  "version": "5",
+  "remote": {
+    "https://edge.netlify.com/": "fd941d61d88673d5f28aab283fb86fcc50f08a3bc80ee5470498fcfa88c65cfb",
+    "https://edge.netlify.com/bootstrap/config.ts": "6a2ce0e544e15e8f8883a5c18da5948e37fd0f2619f68cb31f3af53c51817025",
+    "https://edge.netlify.com/bootstrap/context.ts": "e97240232121e2f369f6546ce961490f34d961ea1ea54be3ff09633e3f08373f",
+    "https://edge.netlify.com/bootstrap/cookie.ts": "8b0baae708989ca183c6f3b4ab3d029e6abcbc2e43f93edeb0ff447b3bbc3a05",
+    "https://edge.netlify.com/bootstrap/edge_function.ts": "b8253e86aa83c67341f5cfedeba5049d77fbf84dcab7eceff7566b7728ae9b39",
+    "https://edge.netlify.com/bootstrap/globals/types.ts": "eaa6148ded3121d8dee62dd91c86e7fe76601df0f3ca8d7962243a30f4c8935f"
+  },
+  "workspace": {
+    "packageJson": {
+      "dependencies": [
+        "npm:@airgap/beacon-sdk@^4.7.0",
+        "npm:@eslint/js@^9.9.0",
+        "npm:@ffmpeg/ffmpeg@~0.12.15",
+        "npm:@ffmpeg/util@~0.12.2",
+        "npm:@radix-ui/react-select@^2.1.2",
+        "npm:@radix-ui/react-slider@^1.2.2",
+        "npm:@radix-ui/react-switch@^1.1.2",
+        "npm:@radix-ui/react-tabs@^1.1.2",
+        "npm:@taquito/beacon-wallet@^24.0.2",
+        "npm:@taquito/taquito@^24.0.2",
+        "npm:@taquito/utils@^24.0.2",
+        "npm:@types/react-dom@^18.3.0",
+        "npm:@types/react@^18.3.3",
+        "npm:@vitejs/plugin-react@^4.3.1",
+        "npm:buffer@^6.0.3",
+        "npm:clsx@^2.1.1",
+        "npm:eslint-config-prettier@^9.1.0",
+        "npm:eslint-plugin-react-hooks@^5.1.0-rc.0",
+        "npm:eslint-plugin-react-refresh@~0.4.11",
+        "npm:eslint@^9.9.0",
+        "npm:gif.js@0.2",
+        "npm:globals@^17.2.0",
+        "npm:mp4-muxer@^5.2.2",
+        "npm:prettier@^3.3.3",
+        "npm:react-dom@^18.3.1",
+        "npm:react@^18.3.1",
+        "npm:tone@^15.1.22",
+        "npm:typescript-eslint@^8.54.0",
+        "npm:typescript@^5.5.4",
+        "npm:vite-plugin-node-polyfills@0.25",
+        "npm:vite@^5.4.2",
+        "npm:zustand@^4.5.5"
+      ]
+    }
+  }
+}

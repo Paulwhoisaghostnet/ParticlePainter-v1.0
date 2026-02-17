@@ -1,25 +1,31 @@
 import type { GlobalConfig, LayerConfig, AudioMapping, AudioSource } from "../state/types";
 import { createFbo, createProgram, createTexture, makeQuadVAO, must, loadImageBitmap } from "./gl";
-import { 
-  simVS, simFS, renderVS, renderFS, blitVS, blitFS,
-  depthGenVS, depthGenFS,
-  smearUpdateVS, smearUpdateFS,
-  rippleUpdateVS, rippleUpdateFS,
-  dentUpdateVS, dentUpdateFS,
-  fieldCompositeVS, fieldCompositeFS
-} from "./shaders";
+import simVS from "./shaders/sim.vert.glsl?raw";
+import simFS from "./shaders/sim.frag.glsl?raw";
+import renderVS from "./shaders/render.vert.glsl?raw";
+import renderFS from "./shaders/render.frag.glsl?raw";
+import blitVS from "./shaders/blit.vert.glsl?raw";
+import blitFS from "./shaders/blit.frag.glsl?raw";
+import depthGenVS from "./shaders/depthGen.vert.glsl?raw";
+import depthGenFS from "./shaders/depthGen.frag.glsl?raw";
+import smearUpdateVS from "./shaders/smearUpdate.vert.glsl?raw";
+import smearUpdateFS from "./shaders/smearUpdate.frag.glsl?raw";
+import rippleUpdateVS from "./shaders/rippleUpdate.vert.glsl?raw";
+import rippleUpdateFS from "./shaders/rippleUpdate.frag.glsl?raw";
+import dentUpdateVS from "./shaders/dentUpdate.vert.glsl?raw";
+import dentUpdateFS from "./shaders/dentUpdate.frag.glsl?raw";
+import fieldCompositeVS from "./shaders/fieldComposite.vert.glsl?raw";
+import fieldCompositeFS from "./shaders/fieldComposite.frag.glsl?raw";
 import type { AudioAnalysisData } from "./AudioEngine";
 
-// Constants
-const MAX_ATTRACTION_POINTS = 8;
+import { 
+  MAX_ATTRACTION_POINTS, ATTRACTION_TYPE_MAP, ATTRACTION_EFFECT_MAP,
+  SPAWN_REGION_MAP, MOVEMENT_PATTERN_MAP, COLOR_MODE_MAP,
+  SHAPE_MAP, TYPE_MAP, MASK_MODE_MAP, BOUNDARY_MODE_MAP, MATERIAL_MODE_MAP,
+  shapeToInt, TEXTURE_SIDE_MIN, TEXTURE_SIDE_MAX
+} from "./config";
 
-// Attraction type and effect mappings (constant to avoid recreation)
-const ATTRACTION_TYPE_MAP: Record<string, number> = { 
-  direct: 0, spiral: 1, blackhole: 2, pulsing: 3, magnetic: 4 
-};
-const ATTRACTION_EFFECT_MAP: Record<string, number> = { 
-  none: 0, despawn: 1, orbit: 2, concentrate: 3, transform: 4, passToNext: 5 
-};
+// Apply audio mapping to a base value
 
 // Apply audio mapping to a base value
 function applyAudioMapping(
@@ -456,7 +462,7 @@ export class ParticleEngine {
       gl.uniform1f(u_dither, l.dither);
       
       // Color mode and colors
-      const colorModeInt = l.colorMode === "gradient" ? 1 : l.colorMode === "scheme" ? 2 : l.colorMode === "range" ? 3 : 0;
+      const colorModeInt = COLOR_MODE_MAP[l.colorMode] ?? 0;
       gl.uniform1i(u_colorMode, colorModeInt);
       
       const tint = hexToRgb(l.color);
@@ -495,7 +501,7 @@ export class ParticleEngine {
       gl.uniform1i(u_shape, shapeInt);
       
       // Type: sand=0, dust=1, sparks=2, ink=3
-      const typeInt = l.type === "sand" ? 0 : l.type === "dust" ? 1 : l.type === "sparks" ? 2 : 3;
+      const typeInt = TYPE_MAP[l.type] ?? 3;
       gl.uniform1i(u_type, typeInt);
       
       gl.uniform1f(u_trailLength, l.trailLength ?? 0);
@@ -616,7 +622,7 @@ export class ParticleEngine {
     gl.uniform1f(gl.getUniformLocation(this.simProg, "u_dt"), dt);
     gl.uniform1f(gl.getUniformLocation(this.simProg, "u_time"), this.time);
 
-    const typeInt = l.type === "sand" ? 0 : l.type === "dust" ? 1 : l.type === "sparks" ? 2 : l.type === "crumbs" ? 4 : l.type === "liquid" ? 5 : 3;
+    const typeInt = TYPE_MAP[l.type] ?? 3;
     gl.uniform1i(gl.getUniformLocation(this.simProg, "u_type"), typeInt);
 
     // Get audio config for this layer
@@ -647,9 +653,7 @@ export class ParticleEngine {
     gl.uniform1f(gl.getUniformLocation(this.simProg, "u_drag"), l.drag);
     gl.uniform1f(gl.getUniformLocation(this.simProg, "u_jitter"), effectiveJitter);
     gl.uniform1f(gl.getUniformLocation(this.simProg, "u_curl"), effectiveCurl);
-    gl.uniform1f(gl.getUniformLocation(this.simProg, "u_attract"), l.attract);
-    gl.uniform1f(gl.getUniformLocation(this.simProg, "u_attractFalloff"), l.attractFalloff ?? 1.0);
-    gl.uniform2f(gl.getUniformLocation(this.simProg, "u_attractPoint"), l.attractPoint.x, l.attractPoint.y);
+    // Legacy attraction uniforms removed
     
     // Multiple attraction points system - iterate without filtering to avoid allocation
     const attractionPoints = l.attractionPoints || [];
@@ -680,7 +684,7 @@ export class ParticleEngine {
     gl.uniform1f(gl.getUniformLocation(this.simProg, "u_spawnRate"), effectiveSpawnRate);
     gl.uniform1f(gl.getUniformLocation(this.simProg, "u_maskThreshold"), hasMask ? l.maskThreshold : 0.0);
     gl.uniform1f(gl.getUniformLocation(this.simProg, "u_maskInvert"), hasMask && l.maskInvert ? 1.0 : 0.0);
-    const boundaryMode = l.boundaryMode === "bounce" ? 1 : l.boundaryMode === "wrap" ? 2 : 0;
+    const boundaryMode = BOUNDARY_MODE_MAP[l.boundaryMode] ?? 0;
     gl.uniform1i(gl.getUniformLocation(this.simProg, "u_boundaryMode"), boundaryMode);
     gl.uniform1f(gl.getUniformLocation(this.simProg, "u_boundaryBounce"), l.boundaryBounce);
     gl.uniform1f(gl.getUniformLocation(this.simProg, "u_speed"), effectiveSpeed);
@@ -699,7 +703,7 @@ export class ParticleEngine {
     gl.uniform2f(gl.getUniformLocation(this.simProg, "u_maskSkew"), skewXTan, skewYTan);
 
     // Mask mode and physics uniforms
-    const maskModeInt = l.maskMode === "ignore" ? 0 : l.maskMode === "visibility" ? 1 : l.maskMode === "accumulate" ? 3 : 2;
+    const maskModeInt = MASK_MODE_MAP[l.maskMode] ?? 0;
     gl.uniform1i(gl.getUniformLocation(this.simProg, "u_maskMode"), maskModeInt);
     gl.uniform1f(gl.getUniformLocation(this.simProg, "u_stickiness"), l.maskStickiness ?? 0.3);
     gl.uniform1f(gl.getUniformLocation(this.simProg, "u_magnetism"), l.maskMagnetism ?? 0);
@@ -715,7 +719,7 @@ export class ParticleEngine {
     gl.uniform1f(gl.getUniformLocation(this.simProg, "u_depthScale"), l.depthScale ?? 0.5);
 
     // Material mode and palette
-    const materialModeInt = l.materialMode === "binary" ? 0 : l.materialMode === "palette" ? 1 : 2;
+    const materialModeInt = MATERIAL_MODE_MAP[l.materialMode] ?? 0;
     gl.uniform1i(gl.getUniformLocation(this.simProg, "u_materialMode"), materialModeInt);
     
     // Use mask texture as material texture for palette/rgb modes
@@ -762,12 +766,7 @@ export class ParticleEngine {
 
     // === SPAWN REGION UNIFORMS ===
     const spawnConfig = l.spawnConfig;
-    const spawnRegionMap: Record<string, number> = {
-      random: 0, topEdge: 1, bottomEdge: 2, leftEdge: 3, rightEdge: 4,
-      offCanvasTop: 5, offCanvasBottom: 6, offCanvasLeft: 7, offCanvasRight: 8,
-      center: 9, centerBurst: 10, mask: 11, maskEdge: 12, custom: 13
-    };
-    gl.uniform1i(gl.getUniformLocation(this.simProg, "u_spawnRegion"), spawnRegionMap[spawnConfig?.region ?? "random"] ?? 0);
+    gl.uniform1i(gl.getUniformLocation(this.simProg, "u_spawnRegion"), SPAWN_REGION_MAP[spawnConfig?.region ?? "random"] ?? 0);
     gl.uniform1f(gl.getUniformLocation(this.simProg, "u_spawnEdgeOffset"), spawnConfig?.edgeOffset ?? 0.05);
     gl.uniform1f(gl.getUniformLocation(this.simProg, "u_spawnEdgeSpread"), spawnConfig?.edgeSpread ?? 1.0);
     gl.uniform2f(gl.getUniformLocation(this.simProg, "u_spawnCenterPoint"), 
@@ -781,11 +780,7 @@ export class ParticleEngine {
 
     // === MOVEMENT PATTERN UNIFORMS ===
     const moveConfig = l.movementConfig;
-    const patternMap: Record<string, number> = {
-      still: 0, linear: 1, spiral: 2, orbit: 3, radialOut: 4, radialIn: 5,
-      wave: 6, figure8: 7, brownian: 8, followCurl: 9, vortex: 10
-    };
-    gl.uniform1i(gl.getUniformLocation(this.simProg, "u_movementPattern"), patternMap[moveConfig?.pattern ?? "still"] ?? 0);
+    gl.uniform1i(gl.getUniformLocation(this.simProg, "u_movementPattern"), MOVEMENT_PATTERN_MAP[moveConfig?.pattern ?? "still"] ?? 0);
     gl.uniform1f(gl.getUniformLocation(this.simProg, "u_patternDirection"), ((moveConfig?.direction ?? 270) * Math.PI) / 180);
     gl.uniform1f(gl.getUniformLocation(this.simProg, "u_patternSpeed"), moveConfig?.speed ?? 0.1);
     gl.uniform2f(gl.getUniformLocation(this.simProg, "u_patternCenter"),
@@ -1317,19 +1312,6 @@ function hexToRgb(hex: string) {
   return { r: Number.isFinite(r) ? r : 1, g: Number.isFinite(g) ? g : 1, b: Number.isFinite(b) ? b : 1 };
 }
 
-function shapeToInt(shape: string): number {
-  switch (shape) {
-    case "dot": return 0;
-    case "star": return 1;
-    case "dash": return 2;
-    case "tilde": return 3;
-    case "square": return 4;
-    case "diamond": return 5;
-    case "ring": return 6;
-    case "cross": return 7;
-    default: return 0;
-  }
-}
 
 type RGB = { r: number; g: number; b: number };
 

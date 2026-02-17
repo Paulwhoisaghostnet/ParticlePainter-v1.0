@@ -46,41 +46,61 @@ a {
 /* ============================================
    MAIN 3-COLUMN LAYOUT
    ============================================ */
+/* ============================================
+   MAIN LAYOUT (Fluid + Studio)
+   ============================================ */
+/* ============================================
+   MAIN LAYOUT (Fluid + Studio)
+   ============================================ */
 .app {
-  display: grid;
-  grid-template-columns: minmax(280px, 320px) 1fr minmax(280px, 320px);
-  grid-template-rows: 1fr auto;
-  gap: 1vh;
+  display: flex;
+  flex-direction: row;
+  width: 100vw;
   height: 100vh;
-  padding: 1vh;
+  padding: 12px;
+  gap: 12px;
+  overflow: hidden;
+  background: var(--bg);
 }
 
-/* Left Panel (Physics/Motion) */
-.leftPanel {
-  grid-column: 1;
-  grid-row: 1 / 3;
-}
-
-/* Canvas area (center) */
+/* Canvas Area (Left/Center) */
 .canvasArea {
-  grid-column: 2;
-  grid-row: 1;
+  flex: 1; /* Takes all remaining space */
   display: flex;
   flex-direction: column;
-  min-height: 0;
+  gap: 12px;
+  height: 100%;
+  min-width: 0; /* Prevents flex items from overflowing */
+  position: relative;
 }
 
-/* Export bar (below canvas) */
-.exportBar {
-  grid-column: 2;
-  grid-row: 2;
+.canvasWrap {
+  flex: 1;
+  position: relative;
+  background: #000;
+  border-radius: var(--radius);
+  border: 1px solid var(--stroke);
+  overflow: hidden;
+  box-shadow: var(--shadow);
 }
 
-/* Right Panel (Render/Appearance) */
+canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Right Panel */
 .rightPanel {
-  grid-column: 3;
-  grid-row: 1 / 3;
+  width: 340px;
+  min-width: 340px;
+  max-width: 340px; /* Force constraint */
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0; /* Never shrink */
 }
+
 
 /* ============================================
    PANEL STYLES
@@ -538,6 +558,62 @@ canvas {
   background: rgba(0, 0, 0, 0.35);
 }
 
+.keyboard-key {
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, Helvetica, Arial;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  color: #ececf1;
+  background: linear-gradient(180deg, #2a2a35 0%, #1a1a24 100%);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+  box-shadow: 
+    0 -1px 0 rgba(0, 0, 0, 0.2) inset,
+    0 3px 0 rgba(0, 0, 0, 0.4),
+    0 3px 0 1px rgba(0,0,0,0.1),
+    0 4px 4px rgba(0, 0, 0, 0.3);
+  padding: 4px 8px;
+  min-width: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+  transform: translateY(-2px);
+  margin-bottom: 3px; /* To account for the shadow */
+  transition: all 0.1s ease;
+}
+
+.keyboard-key:active {
+  transform: translateY(1px);
+  box-shadow: 
+    0 -1px 0 rgba(0, 0, 0, 0.2) inset,
+    0 0 0 rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(0,0,0,0.1),
+    0 1px 1px rgba(0, 0, 0, 0.3);
+}
+
+.keyboard-key.sm {
+  font-size: 10px;
+  padding: 2px 6px;
+  min-width: 20px;
+  border-radius: 4px;
+  box-shadow: 
+    0 -1px 0 rgba(0, 0, 0, 0.2) inset,
+    0 2px 0 rgba(0, 0, 0, 0.4),
+    0 2px 0 1px rgba(0,0,0,0.1),
+    0 3px 3px rgba(0, 0, 0, 0.3);
+}
+
+.keyboard-key.sm:active {
+   transform: translateY(1px);
+   box-shadow: 
+    0 -1px 0 rgba(0, 0, 0, 0.2) inset,
+    0 0 0 rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(0,0,0,0.1),
+    0 1px 1px rgba(0, 0, 0, 0.3);
+}
+
 /* ============================================
    BADGES
    ============================================ */
@@ -731,38 +807,31 @@ canvas {
 /* ============================================
    RESPONSIVE ADJUSTMENTS
    ============================================ */
-@media (max-width: 1200px) {
+/* ============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================ */
+@media (max-width: 800px) {
   .app {
-    grid-template-columns: minmax(260px, 300px) 1fr minmax(260px, 300px);
-  }
-}
-
-@media (max-width: 1000px) {
-  .app {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr auto auto;
+    flex-direction: column; /* Stack vertically */
+    height: auto;
+    min-height: 100vh;
+    overflow-y: auto; /* Allow scrolling on mobile */
   }
 
-  .leftPanel {
-    grid-column: 1;
-    grid-row: 1;
-    max-height: 40vh;
-  }
-
+  /* Canvas becomes the "Hero" at the top */
   .canvasArea {
-    grid-column: 1;
-    grid-row: 2;
+    height: 50vh; /* Fixed height for canvas on mobile */
+    flex: none; /* Disable flex-grow */
+    min-height: 300px;
   }
 
-  .exportBar {
-    grid-column: 1;
-    grid-row: 3;
-  }
-
+  /* Right Panel becomes the "Bottom Sheet" */
   .rightPanel {
-    grid-column: 1;
-    grid-row: 4;
-    max-height: 40vh;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    height: auto;
+    flex: 1; /* Take remaining space */
   }
 }
 
@@ -805,4 +874,168 @@ canvas {
 .select option {
   background-color: var(--panel) !important;
   color: var(--text) !important;
+}
+
+/* ============================================
+   ACCORDION
+   ============================================ */
+.accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.accordionItem {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.accordionItem[data-state='open'] {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--stroke);
+}
+
+.accordionTrigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.accordionTrigger:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.accordionTrigger[data-state='open'] {
+  color: var(--text);
+  border-bottom: 1px solid var(--stroke);
+}
+
+.accordionContent {
+  overflow: hidden;
+  transition: height 0.3s cubic-bezier(0.87, 0, 0.13, 1);
+}
+
+.accordionBody {
+  padding: 12px;
+}
+
+/* Nested Accordion Styling */
+.accordionItem .accordionItem {
+  background: transparent;
+  border: none;
+  border-left: 1px solid var(--stroke);
+  border-radius: 0;
+  margin-left: 8px;
+}
+
+.accordionItem .accordionItem .accordionTrigger {
+  font-size: 11px;
+}
+
+/* ============================================
+   LAYER LIST
+   ============================================ */
+.layerList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.layerRow {
+  display: flex;
+  align-items: center;
+  padding: 4px 6px 4px 0; /* Left padding 0 for color strip */
+  background: transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.2s;
+}
+
+.layerRow:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.layerRow.active {
+  background: rgba(124, 58, 237, 0.08);
+}
+
+.layerVisBtn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.layerVisBtn:hover, .layerVisBtn.active {
+  color: var(--text);
+}
+
+.layerNameInput {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 13px;
+  width: 100%;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.layerNameInput:focus {
+  background: rgba(0, 0, 0, 0.2);
+  outline: none;
+}
+
+.layerActions {
+  display: flex;
+  gap: 2px;
+  opacity: 0; /* Hide by default, show on hover/active */
+  transition: opacity 0.2s;
+}
+
+.layerRow:hover .layerActions,
+.layerRow.active .layerActions {
+  opacity: 1;
+}
+
+.layerActionBtn {
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 2px;
+  font-size: 10px;
+}
+
+.layerActionBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text);
+}
+
+.layerActionBtn.danger:hover {
+  background: rgba(255, 99, 99, 0.2);
+  color: #ff6363;
 }
