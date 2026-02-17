@@ -47,7 +47,7 @@ export const MASK_MODE_MAP: Record<string, number> = {
 
 // Boundary Mode Mappings
 export const BOUNDARY_MODE_MAP: Record<string, number> = {
-  bounce: 1, wrap: 2
+  respawn: 0, bounce: 1, wrap: 2, stick: 3, destroy: 4, slowBounce: 5
 };
 
 // Material Mode Mappings

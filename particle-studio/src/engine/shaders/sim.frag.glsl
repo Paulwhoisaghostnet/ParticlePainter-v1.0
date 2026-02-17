@@ -1109,9 +1109,11 @@ void main(){
           die = 1.0;
         }
       }
-    } else if(u_boundaryMode == 1 || maskAffectsPhysics){
-      // BOUNCE or mask collision
-      float bounceEnergy = u_boundaryBounce * (1.0 - tp.cling * 0.5);
+    } else if(u_boundaryMode == 1 || u_boundaryMode == 5 || maskAffectsPhysics){
+      // BOUNCE (1), SLOWBOUNCE (5), or mask collision
+      // For slowBounce, reduce bounce energy significantly
+      float bounceMult = (u_boundaryMode == 5) ? 0.3 : 1.0;
+      float bounceEnergy = u_boundaryBounce * bounceMult * (1.0 - tp.cling * 0.5);
       
       // Handle canvas edge bounces
       if(pos.x < 0.0){ pos.x = 0.001; vel.x = abs(vel.x) * bounceEnergy; }
@@ -1195,9 +1197,25 @@ void main(){
       if(maskAffectsPhysics && u_maskMode == 2 && isOutsideMask(maskSample(finalCheckPos), finalCheckPos)){
         die = 1.0;
       }
+    } else if(u_boundaryMode == 3) {
+      // STICK: stop at boundary
+      if(pos.x < 0.0){ pos.x = 0.001; vel = vec2(0.0); }
+      if(pos.x > 1.0){ pos.x = 0.999; vel = vec2(0.0); }
+      if(pos.y < 0.0){ pos.y = 0.001; vel = vec2(0.0); }
+      if(pos.y > 1.0){ pos.y = 0.999; vel = vec2(0.0); }
     } else {
-      // RESPAWN: die and respawn inside
-      die = 1.0;
+      // RESPAWN (0) or DESTROY (4): die and respawn inside
+      // Only die if moving AWAY from canvas (allows off-screen spawns to enter)
+      bool leaving = false;
+      if(pos.x < 0.0 && vel.x < 0.0) leaving = true;
+      else if(pos.x > 1.0 && vel.x > 0.0) leaving = true;
+      else if(pos.y < 0.0 && vel.y < 0.0) leaving = true;
+      else if(pos.y > 1.0 && vel.y > 0.0) leaving = true;
+      
+      // Safety: kill if way out of bounds
+      if(pos.x < -0.5 || pos.x > 1.5 || pos.y < -0.5 || pos.y > 1.5) leaving = true;
+      
+      if(leaving) die = 1.0;
     }
   }
 
