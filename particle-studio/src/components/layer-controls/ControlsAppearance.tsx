@@ -54,10 +54,37 @@ export const ControlsAppearance: React.FC<ControlsProps> = ({ layerId }) => {
         />
 
         <SliderRow
+          label="Size Min Offset"
+          value={layer.pointSizeMin ?? 0}
+          min={-6} max={0} step={0.1}
+          onChange={(v) => updateLayer(layerId, { pointSizeMin: v })}
+        />
+        <SliderRow
+          label="Size Max Offset"
+          value={layer.pointSizeMax ?? 0}
+          min={0} max={6} step={0.1}
+          onChange={(v) => updateLayer(layerId, { pointSizeMax: v })}
+        />
+
+        <SliderRow
           label="Trail Length"
           value={layer.trailLength}
           min={0} max={1} step={0.01}
           onChange={(v) => updateLayer(layerId, { trailLength: v })}
+        />
+        
+        <SliderRow
+          label="Rotation Jitter"
+          value={layer.glyphRotationJitter ?? 0}
+          min={0} max={360} step={1}
+          onChange={(v) => updateLayer(layerId, { glyphRotationJitter: v })}
+        />
+        
+        <SliderRow
+          label="Scale Jitter"
+          value={layer.glyphScaleJitter ?? 0}
+          min={0} max={2} step={0.01}
+          onChange={(v) => updateLayer(layerId, { glyphScaleJitter: v })}
         />
       </div>
 
@@ -103,6 +130,20 @@ export const ControlsAppearance: React.FC<ControlsProps> = ({ layerId }) => {
           value={layer.brightness}
           min={0} max={2} step={0.01}
           onChange={(v) => updateLayer(layerId, { brightness: v })}
+        />
+        
+        <SliderRow
+          label="Brightness Jitter"
+          value={layer.brightnessJitter ?? 0}
+          min={0} max={2} step={0.01}
+          onChange={(v) => updateLayer(layerId, { brightnessJitter: v })}
+        />
+
+        <SliderRow
+          label="Color Jitter"
+          value={layer.colorJitter ?? 0}
+          min={0} max={1} step={0.01}
+          onChange={(v) => updateLayer(layerId, { colorJitter: v })}
         />
         
         <SliderRow

@@ -131,14 +131,10 @@ export const ControlsMovement: React.FC<ControlsProps> = ({ layerId }) => {
         
         <SliderRow
           label="Brownian Jitter"
-          value={layer.movementConfig.pattern === 'brownian' ? (layer.movementConfig.speed * 2) : 0} 
+          value={layer.jitter} 
           min={0} max={1} step={0.01}
-          onChange={(v) => {
-             // If turning on, set pattern to brownian. If off, set to still.
-             if (v > 0) updateLayer(layerId, { movementConfig: { ...layer.movementConfig, pattern: 'brownian', speed: v } });
-             else updateLayer(layerId, { movementConfig: { ...layer.movementConfig, pattern: 'still', speed: 0 } });
-          }}
-          tooltip="Random motion"
+          onChange={(v) => updateLayer(layerId, { jitter: v })}
+          tooltip="Random motion added to any pattern"
         />
 
         <SliderRow

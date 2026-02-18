@@ -4,7 +4,10 @@ import { PresetLibrary } from './PresetLibrary';
 import { Accordion, AccordionItem } from './ui/StudioAccordion';
 import { LayerControls } from './LayerControls'; 
 import { LayerList } from './LayerList';
-import { ParticleType, LayerKind } from '../state/types';
+import { AudioControls } from './AudioControls';
+import { ParticleType, LayerKind, ResolutionPreset } from '../state/types';
+import { SliderRow } from './ui/SliderRow';
+import { SwitchRow } from './ui/SwitchRow';
 
 // Fallback icons since lucide-react is not installed
 const IconPlay = () => <span>▶</span>;
@@ -61,24 +64,111 @@ export const StudioPanel: React.FC<StudioPanelProps> = ({ className = "", onClos
       <div className="panelBody">
         <Accordion>
           <AccordionItem value="global" trigger="Global Settings" defaultOpen={false}>
-             <div className="row">
-               <span className="rowLabel">Time Scale</span>
-               <input 
-                 type="range" 
-                 min="0" max="2" step="0.1" 
-                 value={global.timeScale}
-                 onChange={(e) => setGlobal({ timeScale: parseFloat(e.target.value) })}
+             {/* Resolution Section */}
+             <div className="section" style={{ marginBottom: 16 }}>
+               <div className="sectionTitle" style={{ fontSize: 11, marginBottom: 8, opacity: 0.7 }}>RESOLUTION</div>
+               <div className="row">
+                 <div style={{ display: "flex", gap: 4, flexWrap: "wrap", width: '100%' }}>
+                   {(["512x512", "1080x1080", "2048x2048", "custom"] as ResolutionPreset[]).map((preset) => (
+                     <button
+                       key={preset}
+                       className={`btn btnSm ${global.resolutionPreset === preset ? "btnPrimary" : ""}`}
+                       style={{ flex: 1, minWidth: 60 }}
+                       onClick={() => setGlobal({ resolutionPreset: preset })}
+                     >
+                       {preset === "custom" ? "Custom" : preset.split('x')[0]}
+                     </button>
+                   ))}
+                 </div>
+               </div>
+
+               {global.resolutionPreset === "custom" && (
+                 <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                   <div style={{ flex: 1 }}>
+                     <div className="small">Width</div>
+                     <input
+                       type="number" className="input inputSm" style={{ width: '100%' }}
+                       value={global.customWidth} min={256} max={4096}
+                       onChange={(e) => setGlobal({ customWidth: parseInt(e.target.value) || 256 })}
+                     />
+                   </div>
+                   <div style={{ flex: 1 }}>
+                     <div className="small">Height</div>
+                     <input
+                       type="number" className="input inputSm" style={{ width: '100%' }}
+                       value={global.customHeight} min={256} max={4096}
+                       onChange={(e) => setGlobal({ customHeight: parseInt(e.target.value) || 256 })}
+                     />
+                   </div>
+                 </div>
+               )}
+             </div>
+
+             <div className="separator" style={{ margin: '16px 0', borderBottom: '1px solid var(--stroke)' }} />
+             
+             {/* Visual Settings */}
+             <div className="section" style={{ marginBottom: 16 }}>
+               <div className="sectionTitle" style={{ fontSize: 11, marginBottom: 8, opacity: 0.7 }}>VISUALS</div>
+               <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                 <SwitchRow
+                   label="Monochrome"
+                   checked={global.monochrome}
+                   onCheckedChange={(b) => setGlobal({ monochrome: b })}
+                 />
+                 <SwitchRow
+                   label="Invert"
+                   checked={global.invert}
+                   onCheckedChange={(b) => setGlobal({ invert: b })}
+                 />
+               </div>
+
+               <SliderRow
+                 label="Exposure"
+                 value={global.exposure}
+                 min={0} max={2} step={0.01}
+                 onChange={(v) => setGlobal({ exposure: v })}
+               />
+               <SliderRow
+                 label="Threshold"
+                 value={global.threshold}
+                 min={0} max={1} step={0.001}
+                 onChange={(v) => setGlobal({ threshold: v })}
+               />
+               <SliderRow
+                 label="Threshold Soft"
+                 value={global.thresholdSoft}
+                 min={0} max={0.35} step={0.001}
+                 onChange={(v) => setGlobal({ thresholdSoft: v })}
+               />
+               <SliderRow
+                 label="Threshold Gain"
+                 value={global.thresholdGain}
+                 min={0} max={3} step={0.01}
+                 onChange={(v) => setGlobal({ thresholdGain: v })}
                />
              </div>
-             <div className="row">
-               <span className="rowLabel">Clear Rate</span>
-               <input 
-                 type="range" 
-                 min="0" max="1" step="0.01" 
-                 value={global.clearRate}
-                 onChange={(e) => setGlobal({ clearRate: parseFloat(e.target.value) })}
-               />
+
+             <div className="separator" style={{ margin: '16px 0', borderBottom: '1px solid var(--stroke)' }} />
+
+             <div className="section">
+                 <div className="sectionTitle" style={{ fontSize: 11, marginBottom: 8, opacity: 0.7 }}>TIME</div>
+                 <SliderRow 
+                   label="Time Scale" 
+                   value={global.timeScale} 
+                   min={0} max={2} step={0.1}
+                   onChange={(v) => setGlobal({ timeScale: v })}
+                 />
+                 <SliderRow 
+                   label="Clear Rate" 
+                   value={global.clearRate} 
+                   min={0} max={1} step={0.01}
+                   onChange={(v) => setGlobal({ clearRate: v })}
+                 />
              </div>
+
+             <div className="separator" style={{ margin: '16px 0', borderBottom: '1px solid var(--stroke)' }} />
+             
+             <AudioControls />
           </AccordionItem>
 
           <AccordionItem value="layers" trigger={`Layers (${layers.length})`} defaultOpen={true}>
