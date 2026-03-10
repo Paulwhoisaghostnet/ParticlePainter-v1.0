@@ -6,6 +6,7 @@ import { ControlsMovement } from './layer-controls/ControlsMovement';
 import { ControlsAppearance } from './layer-controls/ControlsAppearance';
 import { ControlsInteraction } from './layer-controls/ControlsInteraction';
 import { AudioMappingEditor } from './AudioMappingEditor';
+import { MaskEditor } from './MaskEditor';
 import { SliderRow } from './ui/SliderRow';
 
 interface LayerControlsProps {
@@ -83,6 +84,12 @@ export const LayerControls: React.FC<LayerControlsProps> = ({ layerId }) => {
 
       {/* Nested Accordion for Categories */}
       <Accordion>
+        {layer.kind === "mask" && (
+          <AccordionItem value="maskimg" trigger="Mask Image & Settings" defaultOpen={true}>
+            <MaskEditor />
+          </AccordionItem>
+        )}
+
         <AccordionItem value="sim" trigger="Simulation & Forces" defaultOpen={true}>
            <ControlsSimulation layerId={layerId} />
         </AccordionItem>

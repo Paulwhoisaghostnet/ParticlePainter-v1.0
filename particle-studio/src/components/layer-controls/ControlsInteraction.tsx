@@ -2,10 +2,28 @@ import React from 'react';
 import { useStudioStore } from '../../state/store';
 import { SliderRow } from '../ui/SliderRow';
 import { SwitchRow } from '../ui/SwitchRow';
+import type { MaskBehavior, BorderEffect } from '../../state/types';
 
 interface ControlsProps {
   layerId: string;
 }
+
+const maskBehaviorOptions: { value: MaskBehavior; label: string; desc: string }[] = [
+  { value: "containment", label: "Containment", desc: "Particles stay confined inside the masked area" },
+  { value: "borderEffect", label: "Border Effect", desc: "Particles transform at the mask boundary" },
+  { value: "colorRegions", label: "Color Regions", desc: "Different mask colors define different behaviors" },
+  { value: "pathing", label: "Pathing", desc: "Mask contours define particle flow paths" }
+];
+
+const borderEffectOptions: { value: BorderEffect; label: string }[] = [
+  { value: "deflect", label: "Deflect (Bounce)" },
+  { value: "smear", label: "Smear (Trail)" },
+  { value: "absorb", label: "Absorb (Stick)" },
+  { value: "repel", label: "Repel (Push Away)" },
+  { value: "transform", label: "Transform (Color Change)" },
+  { value: "fragment", label: "Fragment (Break Apart)" },
+  { value: "passThrough", label: "Pass Through" }
+];
 
 export const ControlsInteraction: React.FC<ControlsProps> = ({ layerId }) => {
   const layers = useStudioStore((s) => s.layers);
@@ -72,7 +90,122 @@ export const ControlsInteraction: React.FC<ControlsProps> = ({ layerId }) => {
                min={-1} max={1} step={0.01}
                onChange={(v) => updateLayer(layerId, { maskMagnetism: v })}
              />
+             <SliderRow
+               label="Magnetism Radius"
+               value={layer.maskMagnetismRadius}
+               min={0} max={1} step={0.01}
+               onChange={(v) => updateLayer(layerId, { maskMagnetismRadius: v })}
+               tooltip="Distance of the magnetic pull/push effect from the mask boundary"
+             />
            </>
+        )}
+
+        <div className="hr" />
+
+        {/* MASK BEHAVIOR SYSTEM */}
+        <div className="sectionTitle" style={{ marginTop: 8 }}>Mask Behavior</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
+          {maskBehaviorOptions.map((opt) => (
+            <div
+              key={opt.value}
+              className={`kindOption${layer.maskBehavior === opt.value ? " selected" : ""}`}
+              style={{ padding: '6px 10px', cursor: 'pointer' }}
+              onClick={() => updateLayer(layerId, { maskBehavior: opt.value })}
+            >
+              <div style={{ fontWeight: 600, fontSize: '0.8rem' }}>{opt.label}</div>
+              <div className="small" style={{ opacity: 0.7 }}>{opt.desc}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* BORDER EFFECT CONFIG - shown when borderEffect behavior is selected */}
+        {layer.maskBehavior === 'borderEffect' && (
+          <div style={{ marginTop: 6 }}>
+            <div className="sectionTitle" style={{ marginTop: 4, marginBottom: 6 }}>Border Effect Settings</div>
+
+            <div className="row">
+              <span className="rowLabel">Effect Type</span>
+              <select
+                className="select"
+                value={layer.borderEffectConfig.effect}
+                onChange={(e) =>
+                  updateLayer(layerId, {
+                    borderEffectConfig: { ...layer.borderEffectConfig, effect: e.target.value as BorderEffect }
+                  })
+                }
+              >
+                {borderEffectOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <SliderRow
+              label="Effect Strength"
+              value={layer.borderEffectConfig.strength}
+              min={0} max={1} step={0.01}
+              onChange={(v) =>
+                updateLayer(layerId, {
+                  borderEffectConfig: { ...layer.borderEffectConfig, strength: v }
+                })
+              }
+              tooltip="How strongly the effect applies at the boundary"
+            />
+
+            {layer.borderEffectConfig.effect === 'smear' && (
+              <SliderRow
+                label="Smear Length"
+                value={layer.borderEffectConfig.smearLength ?? 0.5}
+                min={0} max={1} step={0.01}
+                onChange={(v) =>
+                  updateLayer(layerId, {
+                    borderEffectConfig: { ...layer.borderEffectConfig, smearLength: v }
+                  })
+                }
+              />
+            )}
+
+            {layer.borderEffectConfig.effect === 'fragment' && (
+              <SliderRow
+                label="Fragment Count"
+                value={layer.borderEffectConfig.fragmentCount ?? 3}
+                min={1} max={10} step={1}
+                onChange={(v) =>
+                  updateLayer(layerId, {
+                    borderEffectConfig: { ...layer.borderEffectConfig, fragmentCount: v }
+                  })
+                }
+              />
+            )}
+
+            {layer.borderEffectConfig.effect === 'transform' && (
+              <div className="row">
+                <span className="rowLabel">Transform Color</span>
+                <input
+                  type="color"
+                  className="colorInput"
+                  value={layer.borderEffectConfig.transformColor ?? '#ffffff'}
+                  onChange={(e) =>
+                    updateLayer(layerId, {
+                      borderEffectConfig: { ...layer.borderEffectConfig, transformColor: e.target.value }
+                    })
+                  }
+                />
+              </div>
+            )}
+
+            <SliderRow
+              label="Velocity Scale"
+              value={layer.borderEffectConfig.velocityScale ?? 1}
+              min={0} max={2} step={0.01}
+              onChange={(v) =>
+                updateLayer(layerId, {
+                  borderEffectConfig: { ...layer.borderEffectConfig, velocityScale: v }
+                })
+              }
+              tooltip="Velocity multiplier applied after the effect (0=stop, 1=unchanged, 2=double)"
+            />
+          </div>
         )}
       </div>
 
